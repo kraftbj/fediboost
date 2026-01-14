@@ -87,6 +87,20 @@ class FediBoost_OAuth {
 			return $cached;
 		}
 
+		// Rate limit: max 5 registration attempts per hour per instance.
+		$rate_limit_key = 'fediboost_oauth_rate_' . md5( $instance_url );
+		$attempts = get_transient( $rate_limit_key );
+		if ( false !== $attempts && $attempts >= 5 ) {
+			return new WP_Error(
+				'rate_limited',
+				__( 'Too many registration attempts. Please try again later.', 'fediboost' )
+			);
+		}
+
+		// Increment attempt counter.
+		$attempts = false === $attempts ? 1 : $attempts + 1;
+		set_transient( $rate_limit_key, $attempts, HOUR_IN_SECONDS );
+
 		$endpoint = $instance_url . '/api/v1/apps';
 		$body     = array(
 			'client_name'   => self::CLIENT_NAME,
@@ -421,7 +435,7 @@ class FediBoost_OAuth {
 
 		$apps[ $hostname ] = $credentials;
 
-		update_option( 'fediboost_instance_apps', $apps );
+		update_option( 'fediboost_instance_apps', $apps, false );
 	}
 
 	/**
@@ -462,7 +476,7 @@ class FediBoost_OAuth {
 					'status'          => 'connected',
 					'connected_at'    => time(),
 				);
-				update_option( 'fediboost_accounts', $accounts );
+				update_option( 'fediboost_accounts', $accounts, false );
 				return true;
 			}
 		}
@@ -476,7 +490,7 @@ class FediBoost_OAuth {
 			'connected_at'    => time(),
 		);
 
-		update_option( 'fediboost_accounts', $accounts );
+		update_option( 'fediboost_accounts', $accounts, false );
 
 		return true;
 	}
@@ -496,7 +510,7 @@ class FediBoost_OAuth {
 
 		$accounts[ $account_index ]['status'] = 'disconnected';
 
-		update_option( 'fediboost_accounts', $accounts );
+		update_option( 'fediboost_accounts', $accounts, false );
 
 		return true;
 	}
@@ -513,8 +527,10 @@ class FediBoost_OAuth {
 			$message,
 			wp_json_encode( $context )
 		);
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $log_message );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( $log_message );
+		}
 	}
 
 	/**

@@ -73,21 +73,21 @@ register_deactivation_hook( __FILE__, 'fediboost_deactivate' );
  */
 function fediboost_activate() {
 	// Set activation flag.
-	update_option( 'fediboost_activated', '1' );
+	update_option( 'fediboost_activated', '1', false );
 
 	// Initialize default options if not already set.
 	if ( false === get_option( 'fediboost_accounts' ) ) {
-		update_option( 'fediboost_accounts', array() );
+		update_option( 'fediboost_accounts', array(), false );
 	}
 
 	// Initialize instance apps storage.
 	if ( false === get_option( 'fediboost_instance_apps' ) ) {
-		update_option( 'fediboost_instance_apps', array() );
+		update_option( 'fediboost_instance_apps', array(), false );
 	}
 
 	// Check ActivityPub dependency - set a flag to show notice on next admin load.
 	if ( ! fediboost_is_activitypub_active() ) {
-		update_option( 'fediboost_show_activitypub_notice', '1' );
+		update_option( 'fediboost_show_activitypub_notice', '1', false );
 	}
 }
 
@@ -102,6 +102,16 @@ function fediboost_deactivate() {
 
 	// Remove the ActivityPub notice flag.
 	delete_option( 'fediboost_show_activitypub_notice' );
+
+	// Clean up any pending OAuth state transients.
+	global $wpdb;
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			$wpdb->esc_like( '_transient_fediboost_oauth_state_' ) . '%',
+			$wpdb->esc_like( '_transient_timeout_fediboost_oauth_state_' ) . '%'
+		)
+	);
 }
 
 /**
@@ -121,7 +131,7 @@ function fediboost_is_activitypub_active() {
  */
 function fediboost_check_activitypub_dependency() {
 	if ( ! fediboost_is_activitypub_active() ) {
-		update_option( 'fediboost_show_activitypub_notice', '1' );
+		update_option( 'fediboost_show_activitypub_notice', '1', false );
 	} else {
 		delete_option( 'fediboost_show_activitypub_notice' );
 	}

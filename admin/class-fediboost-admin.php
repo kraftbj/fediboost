@@ -142,6 +142,12 @@ class FediBoost_Admin {
 			array(),
 			FEDIBOOST_VERSION
 		);
+
+		wp_enqueue_script( 'fediboost-admin', '', array(), FEDIBOOST_VERSION, true );
+		wp_add_inline_script(
+			'fediboost-admin',
+			'function fediboostConfirmDisconnect() { return confirm( "' . esc_js( __( 'Are you sure you want to disconnect this account?', 'fediboost' ) ) . '" ); }'
+		);
 	}
 
 	/**
@@ -517,8 +523,10 @@ class FediBoost_Admin {
 			$message,
 			wp_json_encode( $context )
 		);
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $log_message );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( $log_message );
+		}
 	}
 
 	/**
@@ -637,7 +645,7 @@ class FediBoost_Admin {
 								'fediboost_disconnect_' . $index
 							);
 							?>
-							<a href="<?php echo esc_url( $disconnect_url ); ?>" class="button button-secondary" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to disconnect this account?', 'fediboost' ); ?>');">
+							<a href="<?php echo esc_url( $disconnect_url ); ?>" class="button button-secondary" onclick="return fediboostConfirmDisconnect();" aria-label="<?php esc_attr_e( 'Disconnect this Mastodon account', 'fediboost' ); ?>">
 								<?php esc_html_e( 'Disconnect', 'fediboost' ); ?>
 							</a>
 						</td>

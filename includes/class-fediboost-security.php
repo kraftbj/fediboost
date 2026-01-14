@@ -71,7 +71,8 @@ class FediBoost_Security {
 	 * @return bool True if user can manage options.
 	 */
 	public function user_can_manage() {
-		return current_user_can( 'manage_options' );
+		$capability = apply_filters( 'fediboost_manage_capability', 'manage_options' );
+		return current_user_can( $capability );
 	}
 
 	/**
@@ -214,8 +215,10 @@ class FediBoost_Security {
 			$user_id,
 			$context
 		);
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $message );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( $message );
+		}
 	}
 
 	/**

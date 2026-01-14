@@ -236,7 +236,9 @@ class FediBoost_ActivityPub {
 			$message,
 			wp_json_encode( $context )
 		);
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $log_message );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( $log_message );
+		}
 	}
 }

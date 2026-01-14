@@ -185,7 +185,7 @@ class FediBoost_Accounts {
 
 		$accounts[ $index ]['status'] = $status;
 
-		return update_option( self::OPTION_KEY, $accounts );
+		return update_option( self::OPTION_KEY, $accounts, false );
 	}
 
 	/**
@@ -203,7 +203,7 @@ class FediBoost_Accounts {
 
 		array_splice( $accounts, $index, 1 );
 
-		return update_option( self::OPTION_KEY, $accounts );
+		return update_option( self::OPTION_KEY, $accounts, false );
 	}
 
 	/**
@@ -230,7 +230,7 @@ class FediBoost_Accounts {
 					'status'          => self::STATUS_CONNECTED,
 					'connected_at'    => time(),
 				);
-				return update_option( self::OPTION_KEY, $accounts );
+				return update_option( self::OPTION_KEY, $accounts, false );
 			}
 		}
 
@@ -243,7 +243,7 @@ class FediBoost_Accounts {
 			'connected_at'    => time(),
 		);
 
-		return update_option( self::OPTION_KEY, $accounts );
+		return update_option( self::OPTION_KEY, $accounts, false );
 	}
 
 	/**
@@ -311,6 +311,6 @@ class FediBoost_Accounts {
 	 * @return bool True on success.
 	 */
 	public function clear_all_accounts() {
-		return update_option( self::OPTION_KEY, array() );
+		return update_option( self::OPTION_KEY, array(), false );
 	}
 }

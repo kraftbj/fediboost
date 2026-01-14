@@ -88,15 +88,16 @@ class FediBoost_Boost {
 			return;
 		}
 
-		// Check if post type is supported (only standard posts for MVP).
-		if ( 'post' !== $post->post_type ) {
-			return;
-		}
-
-		// Check if post is eligible for boosting.
+		// Check if post is eligible for boosting via ActivityPub.
 		$activitypub = FediBoost_ActivityPub::get_instance();
 		if ( ! $activitypub->is_post_eligible( $post ) ) {
 			$this->log_info( 'Post not eligible for boost', array( 'post_id' => $post_id ) );
+			return;
+		}
+
+		// Allow programmatic exclusion of individual posts.
+		if ( ! apply_filters( 'fediboost_should_boost_post', true, $post ) ) {
+			$this->log_info( 'Post excluded by filter', array( 'post_id' => $post_id ) );
 			return;
 		}
 
@@ -124,7 +125,8 @@ class FediBoost_Boost {
 			return false;
 		}
 
-		$scheduled_time = time() + self::BOOST_DELAY;
+		$delay = apply_filters( 'fediboost_boost_delay', self::BOOST_DELAY );
+		$scheduled_time = time() + $delay;
 
 		$result = wp_schedule_single_event( $scheduled_time, self::CRON_HOOK, array( $post_id ) );
 
@@ -280,7 +282,7 @@ class FediBoost_Boost {
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $access_token,
 				),
-				'timeout' => 30,
+				'timeout' => 15,
 			)
 		);
 
@@ -353,7 +355,7 @@ class FediBoost_Boost {
 			$request['url'],
 			array(
 				'headers' => $request['headers'],
-				'timeout' => 30,
+				'timeout' => 15,
 			)
 		);
 
@@ -432,8 +434,10 @@ class FediBoost_Boost {
 			$message,
 			wp_json_encode( $context )
 		);
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $log_message );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( $log_message );
+		}
 	}
 
 	/**
@@ -448,7 +452,9 @@ class FediBoost_Boost {
 			$message,
 			wp_json_encode( $context )
 		);
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( $log_message );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( $log_message );
+		}
 	}
 }

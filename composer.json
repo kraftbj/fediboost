@@ -12,12 +12,6 @@
 		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
 		"yoast/phpunit-polyfills": "^2.0"
 	},
-	"autoload": {
-		"classmap": [
-			"includes/",
-			"admin/"
-		]
-	},
 	"scripts": {
 		"test": "phpunit",
 		"phpcs": "phpcs --standard=WordPress .",
