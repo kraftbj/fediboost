@@ -1,0 +1,6 @@
+{
+	"plugins": [
+		".",
+		"https://downloads.wordpress.org/plugin/plugin-check.latest-stable.zip"
+	]
+}

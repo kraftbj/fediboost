@@ -1,0 +1,51 @@
+/**
+ * FediBoost Admin Styles
+ *
+ * Minimal styling that extends WordPress admin defaults.
+ *
+ * @package FediBoost
+ */
+
+/* Empty state styling */
+.fediboost-empty-state {
+	padding: 2rem;
+	background: #f0f0f1;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	text-align: center;
+	margin: 1rem 0;
+}
+
+.fediboost-empty-state p {
+	margin: 0.5rem 0;
+	color: #50575e;
+}
+
+/* Status indicators */
+.fediboost-status {
+	display: inline-block;
+	padding: 0.25rem 0.5rem;
+	border-radius: 3px;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.fediboost-status-connected {
+	background: #d4edda;
+	color: #155724;
+}
+
+.fediboost-status-disconnected {
+	background: #f8d7da;
+	color: #721c24;
+}
+
+/* Inline notice styling */
+.notice.inline {
+	margin: 1rem 0;
+}
+
+/* Table improvements */
+.fediboost-accounts-table td {
+	vertical-align: middle;
+}

@@ -1,0 +1,25 @@
+# Development files
+.wp-env.json
+.git/
+.gitignore
+.distignore
+
+# AI/IDE directories
+.claude/
+
+# Documentation (not for distribution)
+CODE_REVIEW.md
+
+# Testing
+tests/
+phpunit.xml
+
+# Build tools
+composer.json
+composer.lock
+vendor/
+node_modules/
+dist/
+
+# Build artifacts
+*.zip

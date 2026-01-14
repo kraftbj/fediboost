@@ -1,0 +1,16 @@
+# Dependencies
+vendor/
+node_modules/
+
+# Build artifacts
+dist/
+*.zip
+
+# IDE
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# wp-env
+.wp-env.override.json

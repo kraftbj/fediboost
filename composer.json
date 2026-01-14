@@ -1,0 +1,48 @@
+{
+	"name": "fediboost/fediboost",
+	"description": "Automatically boost WordPress posts on connected Mastodon accounts when published via ActivityPub.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^9.0",
+		"wp-coding-standards/wpcs": "^3.0",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"yoast/phpunit-polyfills": "^2.0"
+	},
+	"autoload": {
+		"classmap": [
+			"includes/",
+			"admin/"
+		]
+	},
+	"scripts": {
+		"test": "phpunit",
+		"phpcs": "phpcs --standard=WordPress .",
+		"phpcbf": "phpcbf --standard=WordPress .",
+		"clean": "rm -rf dist fediboost.zip",
+		"build": [
+			"@clean",
+			"mkdir -p dist/fediboost",
+			"cp fediboost.php dist/fediboost/",
+			"cp index.php dist/fediboost/",
+			"cp readme.txt dist/fediboost/",
+			"cp uninstall.php dist/fediboost/",
+			"cp -r includes dist/fediboost/",
+			"cp -r admin dist/fediboost/"
+		],
+		"zip": [
+			"@build",
+			"cd dist && zip -r ../fediboost.zip fediboost",
+			"@post-zip"
+		],
+		"post-zip": "echo '\\n✅ Created fediboost.zip (ready for WordPress upload)'"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
