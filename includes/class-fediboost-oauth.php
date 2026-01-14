@@ -87,6 +87,15 @@ class FediBoost_OAuth {
 			return $cached;
 		}
 
+		// Validate URL resolves to external host.
+		$security = FediBoost_Security::get_instance();
+		if ( ! $security->is_external_url( $instance_url ) ) {
+			return new WP_Error(
+				'invalid_host',
+				__( 'The instance URL could not be validated.', 'fediboost' )
+			);
+		}
+
 		// Rate limit: max 5 registration attempts per hour per instance.
 		$rate_limit_key = 'fediboost_oauth_rate_' . md5( $instance_url );
 		$attempts = get_transient( $rate_limit_key );
@@ -210,6 +219,7 @@ class FediBoost_OAuth {
 
 		$state_data = array(
 			'instance_url' => $instance_url,
+			'user_id'      => get_current_user_id(),
 			'created_at'   => time(),
 		);
 
@@ -236,7 +246,12 @@ class FediBoost_OAuth {
 			return false;
 		}
 
-		// Delete the transient to prevent replay attacks.
+		// Verify the state belongs to the current user.
+		if ( isset( $state_data['user_id'] ) && $state_data['user_id'] !== get_current_user_id() ) {
+			return false;
+		}
+
+		// Delete the transient to prevent replay.
 		delete_transient( $transient_key );
 
 		return $state_data;
@@ -252,6 +267,15 @@ class FediBoost_OAuth {
 	 * @return array|WP_Error Token data on success, WP_Error on failure.
 	 */
 	public function exchange_code_for_token( $instance_url, $code, $client_id, $client_secret ) {
+		// Validate URL resolves to external host.
+		$security = FediBoost_Security::get_instance();
+		if ( ! $security->is_external_url( $instance_url ) ) {
+			return new WP_Error(
+				'invalid_host',
+				__( 'The instance URL could not be validated.', 'fediboost' )
+			);
+		}
+
 		$endpoint = $instance_url . '/oauth/token';
 		$body     = array(
 			'grant_type'    => 'authorization_code',
@@ -338,6 +362,15 @@ class FediBoost_OAuth {
 	 * @return array|WP_Error Account data on success, WP_Error on failure.
 	 */
 	public function verify_credentials( $instance_url, $access_token ) {
+		// Validate URL resolves to external host.
+		$security = FediBoost_Security::get_instance();
+		if ( ! $security->is_external_url( $instance_url ) ) {
+			return new WP_Error(
+				'invalid_host',
+				__( 'The instance URL could not be validated.', 'fediboost' )
+			);
+		}
+
 		$endpoint = $instance_url . '/api/v1/accounts/verify_credentials';
 
 		$response = wp_remote_get(

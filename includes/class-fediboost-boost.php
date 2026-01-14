@@ -152,6 +152,11 @@ class FediBoost_Boost {
 	 * @param int $post_id The post ID to boost.
 	 */
 	public function execute_boost( $post_id ) {
+		// Verify this is a legitimate cron or admin context.
+		if ( ! defined( 'DOING_CRON' ) && ! is_admin() ) {
+			return;
+		}
+
 		$this->log_info( 'Executing boost', array( 'post_id' => $post_id ) );
 
 		// Verify post exists and is still published.

@@ -72,6 +72,10 @@ class FediBoost_Security {
 	 */
 	public function user_can_manage() {
 		$capability = apply_filters( 'fediboost_manage_capability', 'manage_options' );
+		// Ensure capability grants at least editor-level access.
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return false;
+		}
 		return current_user_can( $capability );
 	}
 
@@ -235,6 +239,45 @@ class FediBoost_Security {
 
 		if ( ! $this->verify_nonce( $nonce, $action ) ) {
 			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Validate that a URL host does not resolve to a private IP range.
+	 *
+	 * @param string $url The URL to validate.
+	 * @return bool True if URL is safe to request, false otherwise.
+	 */
+	public function is_external_url( $url ) {
+		$host = wp_parse_url( $url, PHP_URL_HOST );
+		if ( empty( $host ) ) {
+			return false;
+		}
+
+		// Resolve hostname to IP.
+		$ip = gethostbyname( $host );
+		if ( $ip === $host ) {
+			return false; // Resolution failed.
+		}
+
+		// Check for private/reserved IP ranges.
+		$private_ranges = array(
+			'10.0.0.0|10.255.255.255',
+			'172.16.0.0|172.31.255.255',
+			'192.168.0.0|192.168.255.255',
+			'127.0.0.0|127.255.255.255',
+			'169.254.0.0|169.254.255.255',
+			'0.0.0.0|0.255.255.255',
+		);
+
+		$ip_long = ip2long( $ip );
+		foreach ( $private_ranges as $range ) {
+			list( $start, $end ) = explode( '|', $range );
+			if ( $ip_long >= ip2long( $start ) && $ip_long <= ip2long( $end ) ) {
+				return false;
+			}
 		}
 
 		return true;

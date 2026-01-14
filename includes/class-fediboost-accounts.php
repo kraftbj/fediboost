@@ -302,7 +302,7 @@ class FediBoost_Accounts {
 	public function clear_account_cache( $account ) {
 		// Clear any transients related to this account.
 		$hostname = wp_parse_url( $account['instance_url'], PHP_URL_HOST );
-		delete_transient( 'fediboost_account_' . md5( $hostname . $account['username'] ) );
+		delete_transient( 'fediboost_account_' . hash( 'sha256', $hostname . $account['username'] ) );
 	}
 
 	/**
