@@ -4,6 +4,8 @@
  *
  * Provides helpers for managing connected Mastodon accounts data.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Accounts class.
  *
  * Centralized account data management utilities.
+ *
+ * @since 1.0.0
  */
 class Accounts {
 
 	/**
 	 * Option key for storing accounts.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -30,12 +36,16 @@ class Accounts {
 	/**
 	 * Account status: connected.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string
 	 */
 	const STATUS_CONNECTED = 'connected';
 
 	/**
 	 * Account status: disconnected.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -44,12 +54,16 @@ class Accounts {
 	/**
 	 * Single instance of the class.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var Accounts|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return Accounts
 	 */
@@ -62,6 +76,8 @@ class Accounts {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		// Protected constructor for singleton pattern.
@@ -69,6 +85,8 @@ class Accounts {
 
 	/**
 	 * Generate a stable key for an account based on instance hostname and username.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $username     The account username.
@@ -81,6 +99,8 @@ class Accounts {
 
 	/**
 	 * Get the account data schema.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return array Array describing the account data schema.
 	 */
@@ -118,6 +138,8 @@ class Accounts {
 	/**
 	 * Get all connected accounts from options.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return array Array of connected account data.
 	 */
 	public function get_all_accounts() {
@@ -127,6 +149,8 @@ class Accounts {
 
 	/**
 	 * Get a single account by instance URL.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @return array|false Account data or false if not found.
@@ -148,6 +172,8 @@ class Accounts {
 	/**
 	 * Get a single account by index.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param int $index The account index.
 	 * @return array|false Account data or false if not found.
 	 */
@@ -163,6 +189,8 @@ class Accounts {
 
 	/**
 	 * Get a single account by its stable key.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $key The account key from generate_account_key().
 	 * @return array|false Account data or false if not found.
@@ -183,6 +211,8 @@ class Accounts {
 	/**
 	 * Find the current numeric index for an account by its stable key.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $key The account key from generate_account_key().
 	 * @return int|false The numeric index or false if not found.
 	 */
@@ -202,6 +232,8 @@ class Accounts {
 	/**
 	 * Get the count of connected accounts.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return int Number of connected accounts.
 	 */
 	public function get_account_count() {
@@ -211,6 +243,8 @@ class Accounts {
 	/**
 	 * Check if any accounts are connected.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return bool True if at least one account is connected.
 	 */
 	public function has_accounts() {
@@ -219,6 +253,8 @@ class Accounts {
 
 	/**
 	 * Update account status.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $key    The stable account key from generate_account_key().
 	 * @param string $status The new status (connected or disconnected).
@@ -244,6 +280,8 @@ class Accounts {
 	/**
 	 * Remove an account by its stable key.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $key The stable account key from generate_account_key().
 	 * @return bool True on success, false on failure.
 	 */
@@ -263,6 +301,8 @@ class Accounts {
 	/**
 	 * Add a new account.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url    The Mastodon instance URL.
 	 * @param string $username        The account username.
 	 * @param string $encrypted_token The encrypted OAuth token.
@@ -273,6 +313,8 @@ class Accounts {
 
 		/**
 		 * Filters the maximum number of accounts that can be connected.
+		 *
+		 * @since 1.0.0
 		 *
 		 * @param int $max_accounts Maximum number of accounts. Default 10.
 		 */
@@ -321,6 +363,8 @@ class Accounts {
 	/**
 	 * Get accounts that are actively connected.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return array Array of accounts with connected status.
 	 */
 	public function get_connected_accounts() {
@@ -338,6 +382,8 @@ class Accounts {
 
 	/**
 	 * Get accounts that need reconnection.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return array Array of accounts with disconnected status.
 	 */
@@ -358,6 +404,8 @@ class Accounts {
 	/**
 	 * Format username for display as @handle@instance.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $account The account data.
 	 * @return string Formatted username.
 	 */
@@ -369,6 +417,8 @@ class Accounts {
 	/**
 	 * Clear all cached data for an account.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $account The account data.
 	 */
 	public function clear_account_cache( $account ) {
@@ -379,6 +429,8 @@ class Accounts {
 
 	/**
 	 * Clear all accounts data.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return bool True on success.
 	 */

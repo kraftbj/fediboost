@@ -4,6 +4,8 @@
  *
  * Handles encryption and decryption of OAuth tokens using AES-256-CBC.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Encryption class.
  *
  * Provides encryption and decryption functionality for sensitive data.
+ *
+ * @since 1.0.0
  */
 class Encryption {
 
 	/**
 	 * Encryption method.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -30,12 +36,16 @@ class Encryption {
 	/**
 	 * Length of the initialization vector for AES-256-CBC.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var int
 	 */
 	const IV_LENGTH = 16;
 
 	/**
 	 * Length of the HMAC-SHA256 tag.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var int
 	 */
@@ -44,12 +54,16 @@ class Encryption {
 	/**
 	 * Single instance of the class.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var Encryption|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Cached encryption key.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string|null
 	 */
@@ -58,12 +72,16 @@ class Encryption {
 	/**
 	 * Cached HMAC key.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string|null
 	 */
 	private $hmac_key = null;
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return Encryption
 	 */
@@ -76,6 +94,8 @@ class Encryption {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		// Protected constructor for singleton pattern.
@@ -83,6 +103,8 @@ class Encryption {
 
 	/**
 	 * Get the encryption key derived from WordPress auth salt.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return string The 32-byte encryption key.
 	 */
@@ -99,6 +121,8 @@ class Encryption {
 	 *
 	 * Uses a different salt than the encryption key to ensure key separation.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return string The 32-byte HMAC key.
 	 */
 	private function get_hmac_key() {
@@ -114,6 +138,8 @@ class Encryption {
 	 *
 	 * Produces base64(IV + ciphertext + HMAC-SHA256) where the HMAC covers
 	 * the IV and ciphertext to prevent padding oracle attacks.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $plaintext The plaintext string to encrypt.
 	 * @return string|false Base64-encoded encrypted string, or false on failure.
@@ -159,6 +185,8 @@ class Encryption {
 	 * Accepts both the current HMAC-authenticated format and the legacy format
 	 * (without HMAC) for backward compatibility with tokens stored before the
 	 * HMAC addition. Legacy tokens are decrypted with a logged notice.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $encrypted_data Base64-encoded encrypted string.
 	 * @return string|false The decrypted plaintext, or false on failure.
@@ -228,6 +256,8 @@ class Encryption {
 
 	/**
 	 * Check if encryption is available.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return bool True if encryption functions are available.
 	 */

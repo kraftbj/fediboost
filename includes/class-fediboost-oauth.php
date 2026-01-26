@@ -4,6 +4,8 @@
  *
  * Handles Mastodon OAuth 2.0 authentication flow.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * OAuth class.
  *
  * Manages OAuth app registration, authorization, and token exchange with Mastodon instances.
+ *
+ * @since 1.0.0
  */
 class OAuth {
 
 	/**
 	 * OAuth scopes required for the plugin.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -30,12 +36,16 @@ class OAuth {
 	/**
 	 * Client name for OAuth app registration.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string
 	 */
 	const CLIENT_NAME = 'FediBoost for WordPress';
 
 	/**
 	 * Transient prefix for OAuth state.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -44,12 +54,16 @@ class OAuth {
 	/**
 	 * Single instance of the class.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var OAuth|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return OAuth
 	 */
@@ -62,6 +76,8 @@ class OAuth {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		// Protected constructor for singleton pattern.
@@ -69,6 +85,8 @@ class OAuth {
 
 	/**
 	 * Get the OAuth callback URL.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return string The callback URL.
 	 */
@@ -82,6 +100,8 @@ class OAuth {
 	 * When a pinned IP is available the hostname in the URL is replaced with
 	 * the resolved IP address and the original hostname is sent via the Host
 	 * header so that TLS SNI and server routing continue to work.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $method       HTTP method: 'GET' or 'POST'.
 	 * @param string $instance_url The base instance URL (scheme + host).
@@ -111,6 +131,8 @@ class OAuth {
 
 	/**
 	 * Register an OAuth application with a Mastodon instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url The sanitized Mastodon instance URL.
 	 * @return array|\WP_Error App credentials on success, WP_Error on failure.
@@ -225,6 +247,8 @@ class OAuth {
 	/**
 	 * Generate an authorization URL for OAuth flow.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $client_id    The OAuth client ID.
 	 * @return string The full authorization URL.
@@ -247,6 +271,8 @@ class OAuth {
 	/**
 	 * Generate and store a state parameter for CSRF protection.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @return string The generated state token.
 	 */
@@ -266,6 +292,8 @@ class OAuth {
 
 	/**
 	 * Verify and retrieve state data.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $state The state token to verify.
 	 * @return array|false State data on success, false if invalid or expired.
@@ -295,6 +323,8 @@ class OAuth {
 
 	/**
 	 * Exchange an authorization code for an access token.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url  The Mastodon instance URL.
 	 * @param string $code          The authorization code.
@@ -394,6 +424,8 @@ class OAuth {
 	/**
 	 * Verify a token by fetching account credentials.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $access_token The OAuth access token.
 	 * @return array|\WP_Error Account data on success, WP_Error on failure.
@@ -479,6 +511,8 @@ class OAuth {
 	/**
 	 * Revoke an OAuth token with a Mastodon instance.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url  The Mastodon instance URL.
 	 * @param string $token         The access token to revoke.
 	 * @param string $client_id     The OAuth client ID.
@@ -541,6 +575,8 @@ class OAuth {
 	 * returning. If decryption fails the cache entry is treated as a miss so
 	 * the app is re-registered.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @return array|false Cached credentials or false if not found.
 	 */
@@ -575,6 +611,8 @@ class OAuth {
 	 *
 	 * The client_secret is encrypted before storage.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param array  $credentials  The app credentials.
 	 */
@@ -599,6 +637,8 @@ class OAuth {
 
 	/**
 	 * Store a connected account.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $username     The account username.
@@ -657,6 +697,8 @@ class OAuth {
 	/**
 	 * Mark an account as disconnected due to auth failure.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $account_key The stable account key from Accounts::generate_account_key().
 	 * @return bool True on success, false on failure.
 	 */
@@ -667,6 +709,8 @@ class OAuth {
 
 	/**
 	 * Log an error for debugging.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $message The error message.
 	 * @param array  $context Additional context data.
@@ -688,6 +732,8 @@ class OAuth {
 	 *
 	 * This is primarily for testing purposes.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @return array The request data.
 	 */
@@ -707,6 +753,8 @@ class OAuth {
 	 * Build token exchange request data.
 	 *
 	 * This is primarily for testing purposes.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url  The Mastodon instance URL.
 	 * @param string $code          The authorization code.

@@ -4,6 +4,8 @@
  *
  * Handles scheduling and executing boosts on Mastodon accounts.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Boost class.
  *
  * Manages automatic boosting of posts on connected Mastodon accounts.
+ *
+ * @since 1.0.0
  */
 class Boost {
 
 	/**
 	 * Cron action hook name.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -30,6 +36,8 @@ class Boost {
 	/**
 	 * Boost delay in seconds (30 seconds to allow ActivityPub federation).
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var int
 	 */
 	const BOOST_DELAY = 30;
@@ -37,12 +45,16 @@ class Boost {
 	/**
 	 * Single instance of the class.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var Boost|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return Boost
 	 */
@@ -55,6 +67,8 @@ class Boost {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->init_hooks();
@@ -62,6 +76,8 @@ class Boost {
 
 	/**
 	 * Initialize hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	private function init_hooks() {
 		// Hook into post publish event at priority 50 (after ActivityPub's priority 33).
@@ -73,6 +89,8 @@ class Boost {
 
 	/**
 	 * Handle post publish event.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param int           $post_id     Post ID.
 	 * @param \WP_Post      $post        Post object.
@@ -91,6 +109,13 @@ class Boost {
 		}
 
 		// Only process supported post types.
+		/**
+		 * Filters the post types supported for automatic boosting.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string[] $post_types Array of supported post type slugs. Default array( 'post' ).
+		 */
 		$supported_types = apply_filters( 'fediboost_supported_post_types', array( 'post' ) );
 		if ( ! in_array( $post->post_type, $supported_types, true ) ) {
 			return;
@@ -104,6 +129,14 @@ class Boost {
 		}
 
 		// Allow programmatic exclusion of individual posts.
+		/**
+		 * Filters whether a specific post should be boosted.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool     $should_boost Whether to boost the post. Default true.
+		 * @param \WP_Post $post         The post object.
+		 */
 		if ( ! apply_filters( 'fediboost_should_boost_post', true, $post ) ) {
 			$this->log_info( 'Post excluded by filter', array( 'post_id' => $post_id ) );
 			return;
@@ -123,6 +156,8 @@ class Boost {
 	/**
 	 * Schedule a delayed boost for a post.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param int $post_id The post ID to boost.
 	 * @return bool True if scheduled, false if already scheduled or failed.
 	 */
@@ -133,6 +168,13 @@ class Boost {
 			return false;
 		}
 
+		/**
+		 * Filters the delay in seconds before a boost is executed.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $delay Delay in seconds. Default 30.
+		 */
 		$delay          = apply_filters( 'fediboost_boost_delay', self::BOOST_DELAY );
 		$scheduled_time = time() + $delay;
 
@@ -156,6 +198,8 @@ class Boost {
 
 	/**
 	 * Execute boost for a post on all connected accounts.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param int $post_id The post ID to boost.
 	 */
@@ -283,6 +327,8 @@ class Boost {
 	/**
 	 * Search for a status on a Mastodon instance.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url    The Mastodon instance URL.
 	 * @param string $activitypub_url The ActivityPub URL to search for.
 	 * @param string $access_token    The OAuth access token.
@@ -352,6 +398,8 @@ class Boost {
 	/**
 	 * Build the search API request.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url    The Mastodon instance URL.
 	 * @param string $activitypub_url The ActivityPub URL to search for.
 	 * @return array Request data with 'url' key.
@@ -370,6 +418,8 @@ class Boost {
 
 	/**
 	 * Reblog a status on a Mastodon instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $status_id    The local status ID to reblog.
@@ -411,6 +461,8 @@ class Boost {
 	/**
 	 * Build the reblog API request.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $status_id    The local status ID to reblog.
 	 * @param string $access_token The OAuth access token.
@@ -427,6 +479,8 @@ class Boost {
 
 	/**
 	 * Handle boost errors and update account status if needed.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $account_key  The stable account key.
 	 * @param int    $status_code  The HTTP status code.
@@ -453,6 +507,8 @@ class Boost {
 	/**
 	 * Log an info message.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $message The message.
 	 * @param array  $context Additional context data.
 	 */
@@ -470,6 +526,8 @@ class Boost {
 
 	/**
 	 * Log an error message.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $message The message.
 	 * @param array  $context Additional context data.

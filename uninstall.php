@@ -4,6 +4,8 @@
  *
  * Removes all plugin data when the plugin is deleted.
  *
+ * @since 1.0.0
+ *
  * @package FediBoost
  */
 

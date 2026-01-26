@@ -4,6 +4,8 @@
  *
  * Provides nonce verification, capability checks, and input sanitization.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Security class.
  *
  * Centralized security utilities for the plugin.
+ *
+ * @since 1.0.0
  */
 class Security {
 
 	/**
 	 * Nonce action for OAuth connect form.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
@@ -30,6 +36,8 @@ class Security {
 	/**
 	 * Nonce field name for OAuth connect form.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string
 	 */
 	const NONCE_FIELD_CONNECT = 'fediboost_nonce';
@@ -37,12 +45,16 @@ class Security {
 	/**
 	 * Nonce action prefix for disconnect action.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string
 	 */
 	const NONCE_ACTION_DISCONNECT_PREFIX = 'fediboost_disconnect_';
 
 	/**
 	 * Single instance of the class.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var Security|null
 	 */
@@ -54,12 +66,16 @@ class Security {
 	 * Stored so callers can pin the resolved IP to the subsequent HTTP request,
 	 * closing the TOCTOU gap between DNS validation and request dispatch.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string|null
 	 */
 	private $pinned_ip = null;
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return Security
 	 */
@@ -72,6 +88,8 @@ class Security {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		// Protected constructor for singleton pattern.
@@ -80,9 +98,18 @@ class Security {
 	/**
 	 * Check if current user has manage_options capability.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return bool True if user can manage options.
 	 */
 	public function user_can_manage() {
+		/**
+		 * Filters the capability required to manage FediBoost settings.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $capability The capability. Default 'manage_options'.
+		 */
 		$capability = apply_filters( 'fediboost_manage_capability', 'manage_options' );
 		// Ensure capability grants at least editor-level access.
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
@@ -93,6 +120,8 @@ class Security {
 
 	/**
 	 * Verify current user can manage options and die if not.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $context Optional context for logging.
 	 * @return bool True if user has capability.
@@ -107,6 +136,8 @@ class Security {
 
 	/**
 	 * Verify nonce for a given action.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $nonce  The nonce value to verify.
 	 * @param string $action The nonce action.
@@ -126,6 +157,8 @@ class Security {
 	/**
 	 * Create nonce field for OAuth connect form.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return string HTML nonce field.
 	 */
 	public function get_connect_nonce_field() {
@@ -134,6 +167,8 @@ class Security {
 
 	/**
 	 * Verify nonce for OAuth connect form.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $nonce The nonce value to verify.
 	 * @return bool True if nonce is valid.
@@ -145,6 +180,8 @@ class Security {
 	/**
 	 * Get nonce action for disconnect.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $account_key The stable account key.
 	 * @return string The nonce action.
 	 */
@@ -154,6 +191,8 @@ class Security {
 
 	/**
 	 * Verify nonce for disconnect action.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $nonce       The nonce value to verify.
 	 * @param string $account_key The stable account key.
@@ -166,6 +205,8 @@ class Security {
 
 	/**
 	 * Sanitize and validate a Mastodon instance URL.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $url The URL to sanitize.
 	 * @return string|false Sanitized URL or false if invalid.
@@ -220,6 +261,8 @@ class Security {
 	/**
 	 * Log a security violation for debugging.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $type    The type of violation.
 	 * @param string $context Additional context.
 	 */
@@ -239,6 +282,8 @@ class Security {
 
 	/**
 	 * Verify both capability and nonce for a request.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $nonce  The nonce value.
 	 * @param string $action The nonce action.
@@ -262,6 +307,8 @@ class Security {
 	 * Checks both A (IPv4) and AAAA (IPv6) DNS records. Rejects the URL if any
 	 * resolved address is private or reserved. On success, stores the first valid
 	 * IP address so callers can pin the subsequent HTTP request via get_pinned_ip().
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $url The URL to validate.
 	 * @return bool True if URL is safe to request, false otherwise.
@@ -333,6 +380,8 @@ class Security {
 	 *
 	 * Callers should use this to pin the HTTP request to the resolved IP, closing
 	 * the TOCTOU window between DNS validation and the actual request.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return string|null The validated IP address, or null if not available.
 	 */

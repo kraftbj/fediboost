@@ -13,6 +13,8 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: fediboost
  *
+ * @since 1.0.0
+ *
  * @package FediBoost
  */
 
@@ -28,6 +30,8 @@ if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
 
 /**
  * Display admin notice for PHP version requirement.
+ *
+ * @since 1.0.0
  */
 function fediboost_php_version_notice() {
 	?>
@@ -92,6 +96,8 @@ register_deactivation_hook( __FILE__, 'fediboost_deactivate' );
  * Plugin activation callback.
  *
  * Checks for ActivityPub dependency and initializes default options.
+ *
+ * @since 1.0.0
  */
 function fediboost_activate() {
 	// Set activation flag.
@@ -117,6 +123,8 @@ function fediboost_activate() {
  * Plugin deactivation callback.
  *
  * Clears scheduled wp-cron events and transients but retains account data.
+ *
+ * @since 1.0.0
  */
 function fediboost_deactivate() {
 	// Clear all scheduled boost events.
@@ -141,6 +149,8 @@ function fediboost_deactivate() {
 /**
  * Check if ActivityPub plugin is active.
  *
+ * @since 1.0.0
+ *
  * @return bool True if ActivityPub is active, false otherwise.
  */
 function fediboost_is_activitypub_active() {
@@ -152,6 +162,8 @@ function fediboost_is_activitypub_active() {
 
 /**
  * Check ActivityPub dependency on admin_init.
+ *
+ * @since 1.0.0
  */
 function fediboost_check_activitypub_dependency() {
 	if ( ! fediboost_is_activitypub_active() ) {
@@ -164,6 +176,8 @@ add_action( 'admin_init', 'fediboost_check_activitypub_dependency' );
 
 /**
  * Display admin notice when ActivityPub plugin is missing.
+ *
+ * @since 1.0.0
  */
 function fediboost_activitypub_missing_notice() {
 	if ( '1' !== get_option( 'fediboost_show_activitypub_notice' ) ) {
@@ -192,6 +206,8 @@ add_action( 'admin_notices', 'fediboost_activitypub_missing_notice' );
 
 /**
  * Display admin notice when OpenSSL extension is not loaded.
+ *
+ * @since 1.0.0
  */
 function fediboost_openssl_missing_notice() {
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -215,6 +231,8 @@ if ( ! extension_loaded( 'openssl' ) ) {
 
 /**
  * Initialize the plugin.
+ *
+ * @since 1.0.0
  */
 function fediboost_init() {
 	// Initialize main plugin class.

@@ -2,6 +2,8 @@
 /**
  * Main plugin class.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -15,11 +17,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Main FediBoost class.
  *
  * Handles core plugin functionality and singleton pattern.
+ *
+ * @since 1.0.0
  */
 class Plugin {
 
 	/**
 	 * Single instance of the class.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var Plugin|null
 	 */
@@ -27,6 +33,8 @@ class Plugin {
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return Plugin
 	 */
@@ -39,6 +47,8 @@ class Plugin {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		// Core plugin class - hooks are initialized by individual component classes.
@@ -49,6 +59,8 @@ class Plugin {
 	 *
 	 * Boost is disabled when ActivityPub plugin is not active.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return bool True if boost is available, false otherwise.
 	 */
 	public function is_boost_available() {
@@ -57,6 +69,8 @@ class Plugin {
 
 	/**
 	 * Get all connected accounts.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return array Array of connected accounts.
 	 */

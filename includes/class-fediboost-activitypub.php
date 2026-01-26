@@ -4,6 +4,8 @@
  *
  * Provides safe wrappers around ActivityPub plugin functions.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * ActivityPub class.
  *
  * Wraps ActivityPub plugin functions with availability checks and fallbacks.
+ *
+ * @since 1.0.0
  */
 class ActivityPub {
 
 	/**
 	 * Single instance of the class.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var ActivityPub|null
 	 */
@@ -29,6 +35,8 @@ class ActivityPub {
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return ActivityPub
 	 */
@@ -41,6 +49,8 @@ class ActivityPub {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		// Protected constructor for singleton pattern.
@@ -48,6 +58,8 @@ class ActivityPub {
 
 	/**
 	 * Check if ActivityPub plugin is active and available.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return bool True if ActivityPub is active.
 	 */
@@ -57,6 +69,8 @@ class ActivityPub {
 
 	/**
 	 * Check if a post is disabled from ActivityPub federation.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param \WP_Post $post The post to check.
 	 * @return bool True if post is disabled, false if enabled for federation.
@@ -76,6 +90,8 @@ class ActivityPub {
 	/**
 	 * Get the content visibility for a post.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param int $post_id The post ID.
 	 * @return string|false Visibility constant or false if unavailable.
 	 */
@@ -93,6 +109,8 @@ class ActivityPub {
 
 	/**
 	 * Check if post visibility allows federation (public or quiet_public).
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param int $post_id The post ID.
 	 * @return bool True if visibility allows federation.
@@ -131,6 +149,8 @@ class ActivityPub {
 
 	/**
 	 * Get the ActivityPub URL for a post using the transformer factory.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param \WP_Post $post The post object.
 	 * @return string|false The ActivityPub URL or false if unavailable.
@@ -204,6 +224,8 @@ class ActivityPub {
 	/**
 	 * Check if a post is eligible for boosting.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param \WP_Post $post The post object.
 	 * @return bool True if post should be boosted.
 	 */
@@ -228,6 +250,8 @@ class ActivityPub {
 
 	/**
 	 * Log an error for debugging.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $message The error message.
 	 * @param array  $context Additional context data.

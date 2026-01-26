@@ -4,6 +4,8 @@
  *
  * Handles admin menu, settings page, and account management UI.
  *
+ * @since 1.0.0
+ *
  * @package kraftbj/fediboost
  */
 
@@ -17,11 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Admin class.
  *
  * Handles all admin functionality.
+ *
+ * @since 1.0.0
  */
 class Admin {
 
 	/**
 	 * Single instance of the class.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @var Admin|null
 	 */
@@ -30,12 +36,16 @@ class Admin {
 	/**
 	 * Settings page hook suffix.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string
 	 */
 	private $page_hook;
 
 	/**
 	 * Get singleton instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return Admin
 	 */
@@ -48,6 +58,8 @@ class Admin {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->init_hooks();
@@ -55,6 +67,8 @@ class Admin {
 
 	/**
 	 * Initialize hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	private function init_hooks() {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
@@ -73,6 +87,8 @@ class Admin {
 
 	/**
 	 * Register admin menu under Settings.
+	 *
+	 * @since 1.0.0
 	 */
 	public function register_admin_menu() {
 		$this->page_hook = add_options_page(
@@ -86,6 +102,8 @@ class Admin {
 
 	/**
 	 * Register plugin settings using Settings API.
+	 *
+	 * @since 1.0.0
 	 */
 	public function register_settings() {
 		// Register settings group.
@@ -113,6 +131,8 @@ class Admin {
 	 *
 	 * Validates each account entry has required keys with correct types.
 	 * Entries that do not conform to the schema are removed.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param mixed $accounts The accounts value to sanitize.
 	 * @return array Sanitized accounts array.
@@ -159,6 +179,8 @@ class Admin {
 
 	/**
 	 * Render accounts section description.
+	 *
+	 * @since 1.0.0
 	 */
 	public function render_accounts_section() {
 		echo '<p>' . esc_html__( 'Manage your connected Mastodon accounts. When you publish a post, it will automatically be boosted on all connected accounts.', 'fediboost' ) . '</p>';
@@ -166,6 +188,8 @@ class Admin {
 
 	/**
 	 * Enqueue admin styles.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $hook_suffix The current admin page hook suffix.
 	 */
@@ -199,6 +223,8 @@ class Admin {
 
 	/**
 	 * Display admin notices based on query parameters.
+	 *
+	 * @since 1.0.0
 	 */
 	public function display_admin_notices() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -258,6 +284,8 @@ class Admin {
 
 	/**
 	 * Display warning notice for accounts that need reconnection.
+	 *
+	 * @since 1.0.0
 	 */
 	public function display_reconnection_warning() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -299,6 +327,8 @@ class Admin {
 	 * Handle the connect request form submission.
 	 *
 	 * Initiates the OAuth flow by registering the app and redirecting to authorization.
+	 *
+	 * @since 1.0.0
 	 */
 	public function handle_connect_request() {
 		$security = Security::get_instance();
@@ -354,6 +384,8 @@ class Admin {
 
 	/**
 	 * Handle the OAuth callback from Mastodon.
+	 *
+	 * @since 1.0.0
 	 */
 	public function handle_oauth_callback() {
 		$security = Security::get_instance();
@@ -478,6 +510,8 @@ class Admin {
 
 	/**
 	 * Handle the disconnect action.
+	 *
+	 * @since 1.0.0
 	 */
 	public function handle_disconnect_action() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -549,6 +583,8 @@ class Admin {
 	 * If revocation fails, the failure is logged but does not block
 	 * the disconnect flow.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $account The account data.
 	 */
 	private function revoke_account_token( $account ) {
@@ -591,6 +627,8 @@ class Admin {
 	/**
 	 * Redirect to settings page with error parameter.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $error_code The error code.
 	 */
 	private function redirect_with_error( $error_code ) {
@@ -609,6 +647,8 @@ class Admin {
 	/**
 	 * Log an error for debugging.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $message The error message.
 	 * @param array  $context Additional context data.
 	 */
@@ -626,6 +666,8 @@ class Admin {
 
 	/**
 	 * Render the settings page.
+	 *
+	 * @since 1.0.0
 	 */
 	public function render_settings_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -656,6 +698,8 @@ class Admin {
 
 	/**
 	 * Render ActivityPub dependency status.
+	 *
+	 * @since 1.0.0
 	 */
 	private function render_dependency_status() {
 		if ( ! fediboost_is_activitypub_active() ) {
@@ -677,6 +721,8 @@ class Admin {
 
 	/**
 	 * Render empty state when no accounts are connected.
+	 *
+	 * @since 1.0.0
 	 */
 	private function render_empty_state() {
 		?>
@@ -689,6 +735,8 @@ class Admin {
 
 	/**
 	 * Render connected accounts table.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param array $accounts Array of connected accounts.
 	 */
@@ -754,6 +802,8 @@ class Admin {
 
 	/**
 	 * Render the connect new account form.
+	 *
+	 * @since 1.0.0
 	 */
 	private function render_connect_form() {
 		?>
