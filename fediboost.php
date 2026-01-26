@@ -3,7 +3,7 @@
  * Plugin Name: FediBoost
  * Plugin URI: https://github.com/kraftbj/fediboost
  * Description: Automatically boost WordPress posts on connected Mastodon accounts when published via ActivityPub.
- * Version: 1.0.0-alpha
+ * Version: 1.0.0
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Requires Plugins: activitypub
@@ -133,17 +133,8 @@ function fediboost_deactivate() {
 	// Remove the ActivityPub notice flag.
 	delete_option( 'fediboost_show_activitypub_notice' );
 
-	// Clean up OAuth state transients.
-	global $wpdb;
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Required for transient cleanup by prefix
-	$wpdb->query(
-		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-			$wpdb->esc_like( '_transient_fediboost_oauth_state_' ) . '%',
-			$wpdb->esc_like( '_transient_timeout_fediboost_oauth_state_' ) . '%'
-		)
-	);
+	// OAuth state transients have a 1-hour TTL and will expire on their own.
+	// Full transient cleanup happens in uninstall.php on plugin deletion.
 }
 
 /**
