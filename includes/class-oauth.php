@@ -115,7 +115,7 @@ class OAuth {
 		$endpoint  = $instance_url . $endpoint_path;
 
 		if ( null !== $pinned_ip ) {
-			$host = wp_parse_url( $instance_url, PHP_URL_HOST );
+			$host     = wp_parse_url( $instance_url, PHP_URL_HOST );
 			$endpoint = str_replace( '://' . $host, '://' . $pinned_ip, $endpoint );
 			if ( ! isset( $args['headers'] ) ) {
 				$args['headers'] = array();

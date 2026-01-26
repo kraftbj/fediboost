@@ -12,24 +12,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 spl_autoload_register(
-	function ( $class ) {
+	function ( $class_name ) {
 		$prefix = 'FediBoost\\';
 
-		if ( 0 !== strncmp( $prefix, $class, strlen( $prefix ) ) ) {
+		if ( 0 !== strncmp( $prefix, $class_name, strlen( $prefix ) ) ) {
 			return;
 		}
 
-		$relative_class = substr( $class, strlen( $prefix ) );
+		$relative_class = substr( $class_name, strlen( $prefix ) );
 
 		$class_map = array(
-			'Plugin'      => 'includes/class-fediboost.php',
-			'Encryption'  => 'includes/class-fediboost-encryption.php',
-			'Security'    => 'includes/class-fediboost-security.php',
-			'OAuth'       => 'includes/class-fediboost-oauth.php',
-			'Accounts'    => 'includes/class-fediboost-accounts.php',
-			'ActivityPub' => 'includes/class-fediboost-activitypub.php',
-			'Boost'       => 'includes/class-fediboost-boost.php',
-			'Admin'       => 'admin/class-fediboost-admin.php',
+			'Plugin'      => 'includes/class-plugin.php',
+			'Encryption'  => 'includes/class-encryption.php',
+			'Security'    => 'includes/class-security.php',
+			'OAuth'       => 'includes/class-oauth.php',
+			'Accounts'    => 'includes/class-accounts.php',
+			'ActivityPub' => 'includes/class-activitypub.php',
+			'Boost'       => 'includes/class-boost.php',
+			'Admin'       => 'admin/class-admin.php',
 		);
 
 		if ( isset( $class_map[ $relative_class ] ) ) {
