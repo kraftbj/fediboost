@@ -105,23 +105,6 @@ WordPress capability required to manage FediBoost settings. Default: 'manage_opt
     return 'edit_others_posts';
 } );`
 
-= fediboost_supported_post_types =
-
-Post types eligible for boosting. Default: array('post').
-
-**Parameters:**
-
-* `$post_types` (array) — Array of post type slugs.
-
-**Example:**
-
-`add_filter( 'fediboost_supported_post_types', function( $post_types ) {
-    // Also boost custom "article" and "news" post types.
-    $post_types[] = 'article';
-    $post_types[] = 'news';
-    return $post_types;
-} );`
-
 = fediboost_max_accounts =
 
 Maximum number of connected Mastodon accounts. Default: 10.

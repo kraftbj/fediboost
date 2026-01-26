@@ -108,19 +108,6 @@ class Boost {
 			return;
 		}
 
-		// Only process supported post types.
-		/**
-		 * Filters the post types supported for automatic boosting.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param string[] $post_types Array of supported post type slugs. Default array( 'post' ).
-		 */
-		$supported_types = apply_filters( 'fediboost_supported_post_types', array( 'post' ) );
-		if ( ! in_array( $post->post_type, $supported_types, true ) ) {
-			return;
-		}
-
 		// Check if post is eligible for boosting via ActivityPub.
 		$activitypub = ActivityPub::get_instance();
 		if ( ! $activitypub->is_post_eligible( $post ) ) {

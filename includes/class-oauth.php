@@ -114,19 +114,33 @@ class OAuth {
 		$pinned_ip = $security->get_pinned_ip();
 		$endpoint  = $instance_url . $endpoint_path;
 
+		$resolve_callback = null;
+
 		if ( null !== $pinned_ip ) {
-			$host     = wp_parse_url( $instance_url, PHP_URL_HOST );
-			$endpoint = str_replace( '://' . $host, '://' . $pinned_ip, $endpoint );
-			if ( ! isset( $args['headers'] ) ) {
-				$args['headers'] = array();
-			}
-			$args['headers']['Host'] = $host;
+			$host = wp_parse_url( $instance_url, PHP_URL_HOST );
+			$port = wp_parse_url( $instance_url, PHP_URL_PORT );
+			$port = $port ? $port : 443;
+
+			// Use CURLOPT_RESOLVE to pin DNS resolution without altering the URL.
+			// This preserves correct TLS certificate validation against the hostname.
+			$resolve_callback = function ( $handle ) use ( $host, $port, $pinned_ip ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.curl_curl_setopt -- Required for DNS pinning; no WP API equivalent.
+				curl_setopt( $handle, CURLOPT_RESOLVE, array( "{$host}:{$port}:{$pinned_ip}" ) );
+			};
+			add_action( 'http_api_curl', $resolve_callback );
 		}
 
 		if ( 'POST' === $method ) {
-			return wp_remote_post( $endpoint, $args );
+			$response = wp_remote_post( $endpoint, $args );
+		} else {
+			$response = wp_remote_get( $endpoint, $args );
 		}
-		return wp_remote_get( $endpoint, $args );
+
+		if ( null !== $resolve_callback ) {
+			remove_action( 'http_api_curl', $resolve_callback );
+		}
+
+		return $response;
 	}
 
 	/**
