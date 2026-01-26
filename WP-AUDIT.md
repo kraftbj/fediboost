@@ -8,58 +8,11 @@
 
 ## Executive Summary
 
-FediBoost is a clean, well-organized WordPress plugin that follows the majority of WordPress Coding Standards. It uses proper escaping, i18n, Settings API, hook patterns, and capability checks. The main areas for improvement are: adopting the `Requires Plugins` header (available since WP 6.5) to formalize the ActivityPub dependency, adding `@since` tags to all docblocks, fixing a stale-index bug in the disconnect flow, and ensuring the distribution build excludes development directories. The plugin is close to WordPress.org directory-ready.
+FediBoost is a clean, well-organized WordPress plugin that follows the majority of WordPress Coding Standards. It uses proper escaping, i18n, Settings API, hook patterns, and capability checks. The main areas for improvement are: adding `@since` tags to all docblocks, documenting developer-facing filter hooks, and declaring the OpenSSL dependency to users. The plugin is close to WordPress.org directory-ready.
 
 ---
 
-## Findings
-
----
-
-### PLUGIN HEADER AND DEPENDENCY MANAGEMENT
-
-#### ISSUE 1: Missing `Requires Plugins` Header — RESOLVED
-
-**Priority:** High
-**Category:** Plugin Directory compliance
-**File:** `fediboost.php:1-16`
-**Status:** Fixed on January 25, 2026. Added `Requires Plugins: activitypub` header to the main plugin file.
-
-WordPress 6.5 introduced the `Requires Plugins` header for declaring plugin dependencies. Since FediBoost requires WordPress 6.9+ and depends on ActivityPub, this header should be used:
-
-```
-Requires Plugins: activitypub
-```
-
-This enables WordPress core to enforce the dependency natively — preventing activation without ActivityPub, showing dependency info on the Plugins screen, and blocking deactivation of ActivityPub while FediBoost is active. This replaces the need for the manual `admin_init` dependency check and the `fediboost_show_activitypub_notice` option.
-
-The current manual detection in `fediboost_check_activitypub_dependency()` and the activation hook check can be removed or kept as a fallback for non-standard environments.
-
----
-
-#### ISSUE 2: readme.txt Installation Instructions Are Inaccurate — RESOLVED
-
-**Priority:** Medium
-**Category:** Plugin Directory compliance
-**File:** `readme.txt:32-36`
-**Status:** Fixed on January 26, 2026. Replaced inaccurate installation instructions with the correct flow: install, activate, navigate to Settings > FediBoost, enter a Mastodon instance URL, and authorize the connection.
-
-The installation instructions previously said:
-
-> Configure your Mastodon account connection through the ActivityPub plugin settings.
-
-FediBoost has its own settings page (`Settings > FediBoost`) with its own OAuth connection flow.
-
----
-
-#### ISSUE 3: readme.txt Missing Privacy/External Services Section — RESOLVED
-
-**Priority:** Medium
-**Category:** Plugin Directory compliance
-**File:** `readme.txt`
-**Status:** Fixed on January 26, 2026. Added an "External Services" section to readme.txt disclosing Mastodon instance communication, data sent/stored, and a link to instance privacy policies.
-
-The plugin communicates with external Mastodon instances (sending OAuth requests, searching for statuses, performing reblogs) and stores OAuth tokens. The WordPress.org plugin directory guidelines require disclosure of external service communication.
+## Open Issues
 
 ---
 
@@ -116,24 +69,6 @@ Class files are loaded via seven `require_once` statements. With Composer alread
 
 ### ARCHITECTURE AND PATTERNS
 
-#### ISSUE 8: Stale Array Index on Disconnect — RESOLVED
-
-**Priority:** High
-**Category:** Functional bug
-**Files:** `admin/class-fediboost-admin.php`, `includes/class-fediboost-accounts.php`, `includes/class-fediboost-security.php`, `includes/class-fediboost-boost.php`, `includes/class-fediboost-oauth.php`
-**Status:** Fixed on January 25, 2026. Replaced numeric array indices with stable account keys (`md5(hostname:username)`) across all account identification, disconnect, status update, and error handling flows. Added `generate_account_key()`, `get_account_by_key()`, and `find_account_index_by_key()` methods to `FediBoost_Accounts`. Updated `remove_account()`, `update_account_status()`, `handle_boost_error()`, `mark_account_disconnected()`, disconnect URL generation, nonce actions, and the disconnect handler to use stable keys.
-
-Accounts were previously stored as a numerically-indexed array and identified by their index in the disconnect URL (`?account=0`). The `remove_account()` method uses `array_splice()` which re-indexes the array. This created a stale-index problem:
-
-1. Admin views the accounts table: Account A (index 0), Account B (index 1), Account C (index 2).
-2. Admin disconnects Account A (index 0). `array_splice` re-indexes: Account B is now index 0, Account C is now index 1.
-3. Admin still has the page open with the old disconnect links.
-4. Admin clicks "Disconnect" on what was Account B (link says `account=1`). The nonce for `fediboost_disconnect_1` still verifies because the nonce action string hasn't changed. But index 1 now points to Account C.
-
-**Result:** The wrong account was disconnected. Now resolved via stable keys.
-
----
-
 #### ISSUE 9: Singleton Pattern Overuse
 
 **Priority:** Low
@@ -159,15 +94,6 @@ Consider a centralized hook registration approach, or at minimum document in the
 ---
 
 ### INTERNATIONALIZATION
-
-#### ISSUE 11: No `.pot` File Included — N/A
-
-**Priority:** Medium
-**Category:** i18n
-**Files:** Project root
-**Status:** Not applicable. Plugin will be hosted on WordPress.org and use translate.wordpress.org for translations. A bundled `.pot` file is not needed.
-
----
 
 #### ISSUE 12: Developer-Facing Filter Hooks Undocumented
 
@@ -231,41 +157,6 @@ The current colors do match the default admin theme, so this is a polish issue r
 
 ---
 
-### DISTRIBUTION AND BUILD
-
-#### ISSUE 16: `.distignore` Does Not Exclude `agent-os/` Directory — RESOLVED
-
-**Priority:** High
-**Category:** Distribution
-**File:** `.distignore`
-**Status:** Fixed on January 25, 2026. Added `agent-os/`, `SECURITY-AUDIT.md`, and `WP-AUDIT.md` to `.distignore`.
-
-The `agent-os/` directory contains project management metadata (specs, planning docs, standards documents). It was not listed in `.distignore`, so tools like `wp dist-archive` would include it in the distribution. This directory should not be included in the distributed plugin — it adds unnecessary files and exposes internal project planning.
-
----
-
-#### ISSUE 17: `.distignore` and Build Script Are Not in Sync — RESOLVED
-
-**Priority:** Medium
-**Category:** Distribution
-**File:** `composer.json:20-28`, `.distignore`
-**Status:** Fixed on January 26, 2026. Added `.idea/` and `phpcs.xml` to `.distignore`. All non-distributed files and directories are now excluded, matching the build script's allowlist.
-
-The build script in `composer.json` explicitly copies specific files/directories into `dist/`. The `.distignore` is also used by tools like `wp dist-archive` and GitHub Actions release workflows. The two are now consistent.
-
----
-
-#### ISSUE 18: No `index.php` in Subdirectories — RESOLVED
-
-**Priority:** Low
-**Category:** WordPress convention
-**Files:** `includes/`, `admin/`, `admin/css/`
-**Status:** Fixed on January 26, 2026. Added `index.php` ("Silence is golden") to `includes/`, `admin/`, and `admin/css/`.
-
-All plugin subdirectories now include the standard WordPress directory listing protection file.
-
----
-
 ### PERFORMANCE
 
 #### ISSUE 19: No Cron Event Cleanup for Orphaned Events
@@ -298,7 +189,7 @@ If OpenSSL is not available, `store_connected_account()` silently fails (returns
 
 ### TESTING
 
-#### ISSUE 21: Test Bootstrap May Not Load WordPress Test Suite
+#### ISSUE 21: Test Coverage Gaps
 
 **Priority:** Low
 **Category:** Testing infrastructure
@@ -315,29 +206,36 @@ No issues with the test infrastructure itself. The test coverage areas (foundati
 
 ## Summary Table
 
-| # | Issue | Priority | Category |
-|---|-------|----------|----------|
-| 1 | ~~Missing `Requires Plugins` header~~ | ~~High~~ | RESOLVED |
-| 2 | ~~readme.txt installation instructions inaccurate~~ | ~~Medium~~ | RESOLVED |
-| 3 | ~~readme.txt missing privacy/external services section~~ | ~~Medium~~ | RESOLVED |
-| 4 | Missing `@since` tags on all methods and hooks | Medium | WPCS Documentation |
-| 5 | Global functions in main plugin file | Low | Code organization |
-| 6 | No PHP namespaces | Low | Modern PHP |
-| 7 | No autoloader | Low | Modern PHP |
-| 8 | ~~Stale array index on disconnect (functional bug)~~ | ~~High~~ | RESOLVED |
-| 9 | Singleton pattern overuse | Low | Architecture |
-| 10 | Mixed hook registration locations | Low | Code organization |
-| 11 | ~~No `.pot` file for translations~~ | ~~Medium~~ | N/A (translate.wordpress.org) |
-| 12 | Developer filter hooks undocumented | Medium | Documentation |
-| 13 | Missing `aria-describedby` on input | Low | Accessibility |
-| 14 | Inline script uses empty source handle | Low | Asset management |
-| 15 | CSS uses hardcoded colors | Low | CSS |
-| 16 | ~~`.distignore` missing `agent-os/` directory~~ | ~~High~~ | RESOLVED |
-| 17 | ~~`.distignore` and build script not in sync~~ | ~~Medium~~ | RESOLVED |
-| 18 | ~~No `index.php` in subdirectories~~ | ~~Low~~ | RESOLVED |
-| 19 | No cron retry/cleanup mechanism | Low | Performance |
-| 20 | OpenSSL dependency not declared to users | Medium | Requirements |
-| 21 | Test coverage gaps | Low | Testing |
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 4 | Missing `@since` tags on all methods and hooks | Medium | Open |
+| 5 | Global functions in main plugin file | Low | Open |
+| 6 | No PHP namespaces | Low | Open |
+| 7 | No autoloader | Low | Open |
+| 9 | Singleton pattern overuse | Low | Open |
+| 10 | Mixed hook registration locations | Low | Open |
+| 12 | Developer filter hooks undocumented | Medium | Open |
+| 13 | Missing `aria-describedby` on input | Low | Open |
+| 14 | Inline script uses empty source handle | Low | Open |
+| 15 | CSS uses hardcoded colors | Low | Open |
+| 19 | No cron retry/cleanup mechanism | Low | Open |
+| 20 | OpenSSL dependency not declared to users | Medium | Open |
+| 21 | Test coverage gaps | Low | Open |
+
+---
+
+## Resolved Issues
+
+| # | Issue | Resolution |
+|---|-------|------------|
+| 1 | Missing `Requires Plugins` header | Fixed Jan 25. Added `Requires Plugins: activitypub` header. |
+| 2 | readme.txt installation instructions inaccurate | Fixed Jan 26. Replaced with correct Settings > FediBoost flow. |
+| 3 | readme.txt missing privacy/external services section | Fixed Jan 26. Added External Services section to readme.txt. |
+| 8 | Stale array index on disconnect (functional bug) | Fixed Jan 25. Replaced numeric indices with stable `md5(hostname:username)` keys. |
+| 11 | No `.pot` file for translations | N/A. Plugin will use translate.wordpress.org. |
+| 16 | `.distignore` missing `agent-os/` directory | Fixed Jan 25. Added `agent-os/`, audit files to `.distignore`. |
+| 17 | `.distignore` and build script not in sync | Fixed Jan 26. Added `.idea/` and `phpcs.xml` to `.distignore`. |
+| 18 | No `index.php` in subdirectories | Fixed Jan 26. Added `index.php` to `includes/`, `admin/`, `admin/css/`. |
 
 ---
 
