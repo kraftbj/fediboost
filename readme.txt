@@ -44,7 +44,98 @@ No, FediBoost requires the ActivityPub plugin to be installed and properly confi
 
 = Can I choose which posts get boosted? =
 
-Currently, FediBoost will boost all newly published posts. Future versions may include options to selectively boost posts based on categories, tags, or other criteria.
+Currently, FediBoost will boost all newly published posts. Future versions may include options to selectively boost posts based on categories, tags, or other criteria. Developers can use the `fediboost_should_boost_post` filter to programmatically control which posts are boosted. See the Developer Hooks section below for details.
+
+= What happens if I change my WordPress authentication salts? =
+
+FediBoost encrypts OAuth tokens using your WordPress authentication salts (defined in wp-config.php). If these salts are changed — for example, by a security plugin, during a security incident response, or by manually editing wp-config.php — all stored tokens will become invalid. You will need to reconnect your Mastodon accounts under Settings > FediBoost after any salt change. This is standard behavior for WordPress plugins that encrypt sensitive data using the built-in salts.
+
+The OpenSSL PHP extension is required for token encryption. If OpenSSL is not available, FediBoost will not be able to store account credentials securely and will display an admin notice.
+
+== Developer Hooks ==
+
+FediBoost provides several filters that allow developers to customize its behavior. All filters follow WordPress coding standards and can be added to your theme's functions.php file or a custom plugin.
+
+= fediboost_should_boost_post =
+
+Control whether a specific post should be boosted. Return false to skip boosting for the given post. Default: true.
+
+**Parameters:**
+
+* `$should_boost` (bool) — Whether the post should be boosted.
+* `$post` (WP_Post) — The post object being published.
+
+**Example:**
+
+`add_filter( 'fediboost_should_boost_post', function( $should_boost, $post ) {
+    // Don't boost posts in the "internal" category.
+    if ( has_category( 'internal', $post ) ) {
+        return false;
+    }
+    return $should_boost;
+}, 10, 2 );`
+
+= fediboost_boost_delay =
+
+Delay in seconds between post publication and the boost action. Default: 30.
+
+**Parameters:**
+
+* `$delay` (int) — The delay in seconds.
+
+**Example:**
+
+`add_filter( 'fediboost_boost_delay', function( $delay ) {
+    // Wait 2 minutes before boosting.
+    return 120;
+} );`
+
+= fediboost_manage_capability =
+
+WordPress capability required to manage FediBoost settings. Default: 'manage_options'. Note: a floor of 'edit_others_posts' is enforced regardless of this filter's return value, so you cannot lower the requirement below that capability.
+
+**Parameters:**
+
+* `$capability` (string) — The required capability.
+
+**Example:**
+
+`add_filter( 'fediboost_manage_capability', function( $capability ) {
+    // Allow editors to manage FediBoost settings.
+    return 'edit_others_posts';
+} );`
+
+= fediboost_supported_post_types =
+
+Post types eligible for boosting. Default: array('post').
+
+**Parameters:**
+
+* `$post_types` (array) — Array of post type slugs.
+
+**Example:**
+
+`add_filter( 'fediboost_supported_post_types', function( $post_types ) {
+    // Also boost custom "article" and "news" post types.
+    $post_types[] = 'article';
+    $post_types[] = 'news';
+    return $post_types;
+} );`
+
+= fediboost_max_accounts =
+
+Maximum number of connected Mastodon accounts. Default: 10.
+
+**Parameters:**
+
+* `$max` (int) — The maximum number of accounts.
+
+**Example:**
+
+`add_filter( 'fediboost_max_accounts', function( $max ) {
+    // Allow up to 25 connected accounts.
+    return 25;
+} );`
 
 == External Services ==
 

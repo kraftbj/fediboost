@@ -4,19 +4,21 @@
  *
  * Handles Mastodon OAuth 2.0 authentication flow.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_OAuth class.
+ * OAuth class.
  *
  * Manages OAuth app registration, authorization, and token exchange with Mastodon instances.
  */
-class FediBoost_OAuth {
+class OAuth {
 
 	/**
 	 * OAuth scopes required for the plugin.
@@ -42,14 +44,14 @@ class FediBoost_OAuth {
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_OAuth|null
+	 * @var OAuth|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_OAuth
+	 * @return OAuth
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -75,10 +77,43 @@ class FediBoost_OAuth {
 	}
 
 	/**
+	 * Send an HTTP request pinned to the IP validated by Security.
+	 *
+	 * When a pinned IP is available the hostname in the URL is replaced with
+	 * the resolved IP address and the original hostname is sent via the Host
+	 * header so that TLS SNI and server routing continue to work.
+	 *
+	 * @param string $method       HTTP method: 'GET' or 'POST'.
+	 * @param string $instance_url The base instance URL (scheme + host).
+	 * @param string $endpoint_path The path appended to the instance URL.
+	 * @param array  $args         Arguments passed to wp_remote_get/post.
+	 * @return array|\WP_Error Response array or WP_Error on failure.
+	 */
+	private function make_pinned_request( $method, $instance_url, $endpoint_path, $args ) {
+		$security  = Security::get_instance();
+		$pinned_ip = $security->get_pinned_ip();
+		$endpoint  = $instance_url . $endpoint_path;
+
+		if ( null !== $pinned_ip ) {
+			$host = wp_parse_url( $instance_url, PHP_URL_HOST );
+			$endpoint = str_replace( '://' . $host, '://' . $pinned_ip, $endpoint );
+			if ( ! isset( $args['headers'] ) ) {
+				$args['headers'] = array();
+			}
+			$args['headers']['Host'] = $host;
+		}
+
+		if ( 'POST' === $method ) {
+			return wp_remote_post( $endpoint, $args );
+		}
+		return wp_remote_get( $endpoint, $args );
+	}
+
+	/**
 	 * Register an OAuth application with a Mastodon instance.
 	 *
 	 * @param string $instance_url The sanitized Mastodon instance URL.
-	 * @return array|WP_Error App credentials on success, WP_Error on failure.
+	 * @return array|\WP_Error App credentials on success, WP_Error on failure.
 	 */
 	public function register_app( $instance_url ) {
 		// Check for cached app credentials first.
@@ -88,9 +123,9 @@ class FediBoost_OAuth {
 		}
 
 		// Validate URL resolves to external host.
-		$security = FediBoost_Security::get_instance();
+		$security = Security::get_instance();
 		if ( ! $security->is_external_url( $instance_url ) ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'invalid_host',
 				__( 'The instance URL could not be validated.', 'fediboost' )
 			);
@@ -100,7 +135,7 @@ class FediBoost_OAuth {
 		$rate_limit_key = 'fediboost_oauth_rate_' . md5( $instance_url );
 		$attempts       = get_transient( $rate_limit_key );
 		if ( false !== $attempts && $attempts >= 5 ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'rate_limited',
 				__( 'Too many registration attempts. Please try again later.', 'fediboost' )
 			);
@@ -110,19 +145,20 @@ class FediBoost_OAuth {
 		$attempts = false === $attempts ? 1 : $attempts + 1;
 		set_transient( $rate_limit_key, $attempts, HOUR_IN_SECONDS );
 
-		$endpoint = $instance_url . '/api/v1/apps';
-		$body     = array(
+		$body = array(
 			'client_name'   => self::CLIENT_NAME,
 			'redirect_uris' => $this->get_callback_url(),
 			'scopes'        => self::SCOPES,
 			'website'       => home_url(),
 		);
 
-		$response = wp_remote_post(
-			$endpoint,
+		$response = $this->make_pinned_request(
+			'POST',
+			$instance_url,
+			'/api/v1/apps',
 			array(
 				'body'    => $body,
-				'timeout' => 30,
+				'timeout' => 15,
 			)
 		);
 
@@ -150,7 +186,7 @@ class FediBoost_OAuth {
 					'error'    => $error_message,
 				)
 			);
-			return new WP_Error(
+			return new \WP_Error(
 				'app_registration_failed',
 				sprintf(
 					/* translators: %s: Error message from Mastodon instance */
@@ -168,7 +204,7 @@ class FediBoost_OAuth {
 					'response' => $body_raw,
 				)
 			);
-			return new WP_Error(
+			return new \WP_Error(
 				'invalid_response',
 				__( 'Invalid response from Mastodon instance during app registration.', 'fediboost' )
 			);
@@ -264,20 +300,19 @@ class FediBoost_OAuth {
 	 * @param string $code          The authorization code.
 	 * @param string $client_id     The OAuth client ID.
 	 * @param string $client_secret The OAuth client secret.
-	 * @return array|WP_Error Token data on success, WP_Error on failure.
+	 * @return array|\WP_Error Token data on success, WP_Error on failure.
 	 */
 	public function exchange_code_for_token( $instance_url, $code, $client_id, $client_secret ) {
 		// Validate URL resolves to external host.
-		$security = FediBoost_Security::get_instance();
+		$security = Security::get_instance();
 		if ( ! $security->is_external_url( $instance_url ) ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'invalid_host',
 				__( 'The instance URL could not be validated.', 'fediboost' )
 			);
 		}
 
-		$endpoint = $instance_url . '/oauth/token';
-		$body     = array(
+		$body = array(
 			'grant_type'    => 'authorization_code',
 			'client_id'     => $client_id,
 			'client_secret' => $client_secret,
@@ -286,11 +321,13 @@ class FediBoost_OAuth {
 			'scope'         => self::SCOPES,
 		);
 
-		$response = wp_remote_post(
-			$endpoint,
+		$response = $this->make_pinned_request(
+			'POST',
+			$instance_url,
+			'/oauth/token',
 			array(
 				'body'    => $body,
-				'timeout' => 30,
+				'timeout' => 15,
 			)
 		);
 
@@ -322,7 +359,7 @@ class FediBoost_OAuth {
 				)
 			);
 
-			return new WP_Error(
+			return new \WP_Error(
 				'token_exchange_failed',
 				sprintf(
 					/* translators: %s: Error message from Mastodon instance */
@@ -340,7 +377,7 @@ class FediBoost_OAuth {
 					'response' => $body_raw,
 				)
 			);
-			return new WP_Error(
+			return new \WP_Error(
 				'invalid_response',
 				__( 'Invalid response from Mastodon instance during token exchange.', 'fediboost' )
 			);
@@ -359,27 +396,27 @@ class FediBoost_OAuth {
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $access_token The OAuth access token.
-	 * @return array|WP_Error Account data on success, WP_Error on failure.
+	 * @return array|\WP_Error Account data on success, WP_Error on failure.
 	 */
 	public function verify_credentials( $instance_url, $access_token ) {
 		// Validate URL resolves to external host.
-		$security = FediBoost_Security::get_instance();
+		$security = Security::get_instance();
 		if ( ! $security->is_external_url( $instance_url ) ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'invalid_host',
 				__( 'The instance URL could not be validated.', 'fediboost' )
 			);
 		}
 
-		$endpoint = $instance_url . '/api/v1/accounts/verify_credentials';
-
-		$response = wp_remote_get(
-			$endpoint,
+		$response = $this->make_pinned_request(
+			'GET',
+			$instance_url,
+			'/api/v1/accounts/verify_credentials',
 			array(
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $access_token,
 				),
-				'timeout' => 30,
+				'timeout' => 15,
 			)
 		);
 
@@ -399,7 +436,7 @@ class FediBoost_OAuth {
 		$body_data   = json_decode( $body_raw, true );
 
 		if ( 401 === $status_code || 403 === $status_code ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'unauthorized',
 				__( 'Access token is invalid or has been revoked.', 'fediboost' )
 			);
@@ -414,7 +451,7 @@ class FediBoost_OAuth {
 					'error'    => $error_message,
 				)
 			);
-			return new WP_Error(
+			return new \WP_Error(
 				'verification_failed',
 				sprintf(
 					/* translators: %s: Error message from Mastodon instance */
@@ -425,7 +462,7 @@ class FediBoost_OAuth {
 		}
 
 		if ( ! isset( $body_data['username'] ) ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'invalid_response',
 				__( 'Invalid response from Mastodon instance during credential verification.', 'fediboost' )
 			);
@@ -440,7 +477,69 @@ class FediBoost_OAuth {
 	}
 
 	/**
+	 * Revoke an OAuth token with a Mastodon instance.
+	 *
+	 * @param string $instance_url  The Mastodon instance URL.
+	 * @param string $token         The access token to revoke.
+	 * @param string $client_id     The OAuth client ID.
+	 * @param string $client_secret The OAuth client secret.
+	 * @return true|\WP_Error True on success, WP_Error on failure.
+	 */
+	public function revoke_token( $instance_url, $token, $client_id, $client_secret ) {
+		$security = Security::get_instance();
+		if ( ! $security->is_external_url( $instance_url ) ) {
+			return new \WP_Error(
+				'invalid_host',
+				__( 'The instance URL could not be validated.', 'fediboost' )
+			);
+		}
+
+		$response = $this->make_pinned_request(
+			'POST',
+			$instance_url,
+			'/oauth/revoke',
+			array(
+				'body'    => array(
+					'client_id'     => $client_id,
+					'client_secret' => $client_secret,
+					'token'         => $token,
+				),
+				'timeout' => 15,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			$this->log_error(
+				'Token revocation failed',
+				array(
+					'instance' => $instance_url,
+					'error'    => $response->get_error_message(),
+				)
+			);
+			return $response;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status_code ) {
+			return new \WP_Error(
+				'revocation_failed',
+				sprintf(
+					/* translators: %d: HTTP status code returned by the instance */
+					__( 'Token revocation returned status %d.', 'fediboost' ),
+					$status_code
+				)
+			);
+		}
+
+		return true;
+	}
+
+	/**
 	 * Get cached app credentials for an instance.
+	 *
+	 * The client_secret is stored encrypted; this method decrypts it before
+	 * returning. If decryption fails the cache entry is treated as a miss so
+	 * the app is re-registered.
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @return array|false Cached credentials or false if not found.
@@ -449,15 +548,32 @@ class FediBoost_OAuth {
 		$apps     = get_option( 'fediboost_instance_apps', array() );
 		$hostname = wp_parse_url( $instance_url, PHP_URL_HOST );
 
-		if ( isset( $apps[ $hostname ] ) ) {
-			return $apps[ $hostname ];
+		if ( ! isset( $apps[ $hostname ] ) ) {
+			return false;
 		}
 
-		return false;
+		$credentials = $apps[ $hostname ];
+
+		// Decrypt the client_secret if it is present.
+		if ( isset( $credentials['client_secret'] ) ) {
+			$encryption = Encryption::get_instance();
+			$decrypted  = $encryption->decrypt( $credentials['client_secret'] );
+
+			if ( false === $decrypted ) {
+				// Decryption failed; treat as cache miss so the app re-registers.
+				return false;
+			}
+
+			$credentials['client_secret'] = $decrypted;
+		}
+
+		return $credentials;
 	}
 
 	/**
 	 * Cache app credentials for an instance.
+	 *
+	 * The client_secret is encrypted before storage.
 	 *
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param array  $credentials  The app credentials.
@@ -465,6 +581,16 @@ class FediBoost_OAuth {
 	private function cache_app_credentials( $instance_url, $credentials ) {
 		$apps     = get_option( 'fediboost_instance_apps', array() );
 		$hostname = wp_parse_url( $instance_url, PHP_URL_HOST );
+
+		// Encrypt the client_secret before persisting.
+		if ( isset( $credentials['client_secret'] ) ) {
+			$encryption = Encryption::get_instance();
+			$encrypted  = $encryption->encrypt( $credentials['client_secret'] );
+
+			if ( false !== $encrypted ) {
+				$credentials['client_secret'] = $encrypted;
+			}
+		}
 
 		$apps[ $hostname ] = $credentials;
 
@@ -480,7 +606,7 @@ class FediBoost_OAuth {
 	 * @return bool True on success, false on failure.
 	 */
 	public function store_connected_account( $instance_url, $username, $access_token ) {
-		$encryption = FediBoost_Encryption::get_instance();
+		$encryption = Encryption::get_instance();
 
 		$encrypted_token = $encryption->encrypt( $access_token );
 		if ( false === $encrypted_token ) {
@@ -531,12 +657,12 @@ class FediBoost_OAuth {
 	/**
 	 * Mark an account as disconnected due to auth failure.
 	 *
-	 * @param string $account_key The stable account key from FediBoost_Accounts::generate_account_key().
+	 * @param string $account_key The stable account key from Accounts::generate_account_key().
 	 * @return bool True on success, false on failure.
 	 */
 	public function mark_account_disconnected( $account_key ) {
-		$accounts_helper = FediBoost_Accounts::get_instance();
-		return $accounts_helper->update_account_status( $account_key, FediBoost_Accounts::STATUS_DISCONNECTED );
+		$accounts_helper = Accounts::get_instance();
+		return $accounts_helper->update_account_status( $account_key, Accounts::STATUS_DISCONNECTED );
 	}
 
 	/**

@@ -2,8 +2,10 @@
 /**
  * Main plugin class.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -14,19 +16,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Handles core plugin functionality and singleton pattern.
  */
-class FediBoost {
+class Plugin {
 
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost|null
+	 * @var Plugin|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost
+	 * @return Plugin
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -59,7 +61,7 @@ class FediBoost {
 	 * @return array Array of connected accounts.
 	 */
 	public function get_connected_accounts() {
-		$accounts = FediBoost_Accounts::get_instance();
+		$accounts = Accounts::get_instance();
 		return $accounts->get_all_accounts();
 	}
 }

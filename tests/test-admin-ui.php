@@ -5,6 +5,9 @@
  * @package kraftbj/fediboost
  */
 
+use FediBoost\Accounts;
+use FediBoost\Admin;
+
 /**
  * Admin UI Tests
  */
@@ -13,7 +16,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	/**
 	 * Accounts helper instance.
 	 *
-	 * @var FediBoost_Accounts
+	 * @var Accounts
 	 */
 	private $accounts;
 
@@ -22,7 +25,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->accounts = FediBoost_Accounts::get_instance();
+		$this->accounts = Accounts::get_instance();
 		// Clear accounts before each test.
 		update_option( 'fediboost_accounts', array() );
 	}
@@ -52,7 +55,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
-		$admin = FediBoost_Admin::get_instance();
+		$admin = Admin::get_instance();
 		ob_start();
 		$admin->render_settings_page();
 		$output = ob_get_clean();
@@ -88,8 +91,9 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		// Verify both accounts exist.
 		$this->assertEquals( 2, $this->accounts->get_account_count() );
 
-		// Remove the first account.
-		$result = $this->accounts->remove_account( 0 );
+		// Remove the first account using its stable key.
+		$account_key = Accounts::generate_account_key( 'https://mastodon.social', 'user1' );
+		$result      = $this->accounts->remove_account( $account_key );
 
 		$this->assertTrue( $result );
 		$this->assertEquals( 1, $this->accounts->get_account_count() );
@@ -108,7 +112,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
-		$admin = FediBoost_Admin::get_instance();
+		$admin = Admin::get_instance();
 		ob_start();
 		$admin->render_settings_page();
 		$output = ob_get_clean();
@@ -130,7 +134,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
-		$admin = FediBoost_Admin::get_instance();
+		$admin = Admin::get_instance();
 
 		// Test success notice.
 		$_GET['page']   = 'fediboost';
@@ -182,7 +186,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
-		$admin = FediBoost_Admin::get_instance();
+		$admin = Admin::get_instance();
 		ob_start();
 		$admin->render_settings_page();
 		$output = ob_get_clean();
@@ -206,13 +210,14 @@ class Test_Admin_UI extends WP_UnitTestCase {
 			'testuser',
 			'token'
 		);
-		$this->accounts->update_account_status( 0, FediBoost_Accounts::STATUS_DISCONNECTED );
+		$account_key = Accounts::generate_account_key( 'https://mastodon.social', 'testuser' );
+		$this->accounts->update_account_status( $account_key, Accounts::STATUS_DISCONNECTED );
 
 		// Create admin user.
 		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
-		$admin = FediBoost_Admin::get_instance();
+		$admin = Admin::get_instance();
 
 		ob_start();
 		$admin->display_reconnection_warning();

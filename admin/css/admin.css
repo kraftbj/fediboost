@@ -31,13 +31,13 @@
 }
 
 .fediboost-status-connected {
-	background: rgba(0, 124, 77, 0.1);
-	color: #007c4d;
+	background: rgba(0, 163, 42, 0.1);
+	color: #00a32a;
 }
 
 .fediboost-status-disconnected {
-	background: rgba(204, 24, 24, 0.1);
-	color: #cc1818;
+	background: rgba(214, 54, 56, 0.1);
+	color: #d63638;
 }
 
 /* Inline notice styling */

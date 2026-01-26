@@ -5,6 +5,10 @@
  * @package kraftbj/fediboost
  */
 
+use FediBoost\Accounts;
+use FediBoost\Encryption;
+use FediBoost\OAuth;
+
 /**
  * OAuth Flow Tests
  *
@@ -17,7 +21,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 	/**
 	 * OAuth instance.
 	 *
-	 * @var FediBoost_OAuth
+	 * @var OAuth
 	 */
 	private $oauth;
 
@@ -26,7 +30,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->oauth = FediBoost_OAuth::get_instance();
+		$this->oauth = OAuth::get_instance();
 
 		// Clean up any stored instance apps.
 		delete_option( 'fediboost_instance_apps' );
@@ -118,7 +122,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 		$this->assertNotEquals( $access_token, $accounts[0]['encrypted_token'] );
 
 		// Verify the token can be decrypted back to original.
-		$encryption = FediBoost_Encryption::get_instance();
+		$encryption = Encryption::get_instance();
 		$decrypted  = $encryption->decrypt( $accounts[0]['encrypted_token'] );
 		$this->assertEquals( $access_token, $decrypted );
 	}
@@ -139,8 +143,9 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 		);
 		update_option( 'fediboost_accounts', $accounts );
 
-		// Mark the account as disconnected.
-		$result = $this->oauth->mark_account_disconnected( 0 );
+		// Mark the account as disconnected using the stable account key.
+		$account_key = Accounts::generate_account_key( 'https://mastodon.social', 'testuser' );
+		$result      = $this->oauth->mark_account_disconnected( $account_key );
 
 		$this->assertTrue( $result );
 

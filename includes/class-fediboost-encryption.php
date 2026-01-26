@@ -4,19 +4,21 @@
  *
  * Handles encryption and decryption of OAuth tokens using AES-256-CBC.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_Encryption class.
+ * Encryption class.
  *
  * Provides encryption and decryption functionality for sensitive data.
  */
-class FediBoost_Encryption {
+class Encryption {
 
 	/**
 	 * Encryption method.
@@ -42,7 +44,7 @@ class FediBoost_Encryption {
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_Encryption|null
+	 * @var Encryption|null
 	 */
 	private static $instance = null;
 
@@ -63,7 +65,7 @@ class FediBoost_Encryption {
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_Encryption
+	 * @return Encryption
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {

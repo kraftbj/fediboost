@@ -51,15 +51,8 @@ define( 'FEDIBOOST_PLUGIN_FILE', __FILE__ );
 define( 'FEDIBOOST_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FEDIBOOST_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
-// Include required files.
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost-encryption.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost-security.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost-oauth.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost-accounts.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost-activitypub.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'includes/class-fediboost-boost.php';
-require_once FEDIBOOST_PLUGIN_DIR . 'admin/class-fediboost-admin.php';
+// Include autoloader.
+require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
 
 // Register activation hook.
 register_activation_hook( __FILE__, 'fediboost_activate' );
@@ -95,7 +88,7 @@ function fediboost_activate() {
 /**
  * Plugin deactivation callback.
  *
- * Clears scheduled wp-cron events but retains account data.
+ * Clears scheduled wp-cron events and transients but retains account data.
  */
 function fediboost_deactivate() {
 	// Clear all scheduled boost events.
@@ -103,6 +96,18 @@ function fediboost_deactivate() {
 
 	// Remove the ActivityPub notice flag.
 	delete_option( 'fediboost_show_activitypub_notice' );
+
+	// Clean up OAuth state transients.
+	global $wpdb;
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Required for transient cleanup by prefix
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			$wpdb->esc_like( '_transient_fediboost_oauth_state_' ) . '%',
+			$wpdb->esc_like( '_transient_timeout_fediboost_oauth_state_' ) . '%'
+		)
+	);
 }
 
 /**
@@ -158,18 +163,41 @@ function fediboost_activitypub_missing_notice() {
 add_action( 'admin_notices', 'fediboost_activitypub_missing_notice' );
 
 /**
+ * Display admin notice when OpenSSL extension is not loaded.
+ */
+function fediboost_openssl_missing_notice() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	?>
+	<div class="notice notice-warning">
+		<p>
+			<?php
+			esc_html_e( 'FediBoost: The OpenSSL PHP extension is not loaded. Token encryption requires OpenSSL to function properly.', 'fediboost' );
+			?>
+		</p>
+	</div>
+	<?php
+}
+
+if ( ! extension_loaded( 'openssl' ) ) {
+	add_action( 'admin_notices', 'fediboost_openssl_missing_notice' );
+}
+
+/**
  * Initialize the plugin.
  */
 function fediboost_init() {
 	// Initialize main plugin class.
-	FediBoost::get_instance();
+	FediBoost\Plugin::get_instance();
 
 	// Initialize boost functionality (includes cron handlers and publish hooks).
-	FediBoost_Boost::get_instance();
+	FediBoost\Boost::get_instance();
 
 	// Initialize admin class if in admin.
 	if ( is_admin() ) {
-		FediBoost_Admin::get_instance();
+		FediBoost\Admin::get_instance();
 	}
 }
 add_action( 'plugins_loaded', 'fediboost_init' );

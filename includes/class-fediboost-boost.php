@@ -4,19 +4,21 @@
  *
  * Handles scheduling and executing boosts on Mastodon accounts.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_Boost class.
+ * Boost class.
  *
  * Manages automatic boosting of posts on connected Mastodon accounts.
  */
-class FediBoost_Boost {
+class Boost {
 
 	/**
 	 * Cron action hook name.
@@ -35,14 +37,14 @@ class FediBoost_Boost {
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_Boost|null
+	 * @var Boost|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_Boost
+	 * @return Boost
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -72,10 +74,10 @@ class FediBoost_Boost {
 	/**
 	 * Handle post publish event.
 	 *
-	 * @param int          $post_id     Post ID.
-	 * @param WP_Post      $post        Post object.
-	 * @param bool         $update      Whether this is an update.
-	 * @param WP_Post|null $post_before Post before update, or null for new posts.
+	 * @param int           $post_id     Post ID.
+	 * @param \WP_Post      $post        Post object.
+	 * @param bool          $update      Whether this is an update.
+	 * @param \WP_Post|null $post_before Post before update, or null for new posts.
 	 */
 	public function on_post_publish( $post_id, $post, $update, $post_before ) {
 		// Only process posts transitioning to 'publish' status.
@@ -88,8 +90,14 @@ class FediBoost_Boost {
 			return;
 		}
 
+		// Only process supported post types.
+		$supported_types = apply_filters( 'fediboost_supported_post_types', array( 'post' ) );
+		if ( ! in_array( $post->post_type, $supported_types, true ) ) {
+			return;
+		}
+
 		// Check if post is eligible for boosting via ActivityPub.
-		$activitypub = FediBoost_ActivityPub::get_instance();
+		$activitypub = ActivityPub::get_instance();
 		if ( ! $activitypub->is_post_eligible( $post ) ) {
 			$this->log_info( 'Post not eligible for boost', array( 'post_id' => $post_id ) );
 			return;
@@ -102,7 +110,7 @@ class FediBoost_Boost {
 		}
 
 		// Check if there are any connected accounts.
-		$accounts = FediBoost_Accounts::get_instance();
+		$accounts = Accounts::get_instance();
 		if ( ! $accounts->has_accounts() ) {
 			$this->log_info( 'No connected accounts, skipping boost', array( 'post_id' => $post_id ) );
 			return;
@@ -167,7 +175,7 @@ class FediBoost_Boost {
 		}
 
 		// Get ActivityPub URL for the post.
-		$activitypub     = FediBoost_ActivityPub::get_instance();
+		$activitypub     = ActivityPub::get_instance();
 		$activitypub_url = $activitypub->get_activitypub_url( $post );
 
 		if ( false === $activitypub_url ) {
@@ -184,7 +192,7 @@ class FediBoost_Boost {
 		);
 
 		// Get all connected accounts.
-		$accounts_helper = FediBoost_Accounts::get_instance();
+		$accounts_helper = Accounts::get_instance();
 		$accounts        = $accounts_helper->get_all_accounts();
 
 		if ( empty( $accounts ) ) {
@@ -192,14 +200,14 @@ class FediBoost_Boost {
 			return;
 		}
 
-		$encryption = FediBoost_Encryption::get_instance();
+		$encryption = Encryption::get_instance();
 
 		// Process each account.
 		foreach ( $accounts as $account ) {
-			$account_key = FediBoost_Accounts::generate_account_key( $account['instance_url'], $account['username'] );
+			$account_key = Accounts::generate_account_key( $account['instance_url'], $account['username'] );
 
 			// Skip disconnected accounts.
-			if ( FediBoost_Accounts::STATUS_CONNECTED !== $account['status'] ) {
+			if ( Accounts::STATUS_CONNECTED !== $account['status'] ) {
 				$this->log_info(
 					'Skipping disconnected account',
 					array(
@@ -366,7 +374,7 @@ class FediBoost_Boost {
 	 * @param string $instance_url The Mastodon instance URL.
 	 * @param string $status_id    The local status ID to reblog.
 	 * @param string $access_token The OAuth access token.
-	 * @return true|WP_Error True on success, WP_Error on failure.
+	 * @return true|\WP_Error True on success, WP_Error on failure.
 	 */
 	public function reblog_status( $instance_url, $status_id, $access_token ) {
 		$request = $this->build_reblog_request( $instance_url, $status_id, $access_token );
@@ -393,7 +401,7 @@ class FediBoost_Boost {
 		$data          = json_decode( $body, true );
 		$error_message = isset( $data['error'] ) ? $data['error'] : 'Unknown error';
 
-		return new WP_Error(
+		return new \WP_Error(
 			'reblog_failed',
 			$error_message,
 			array( 'status_code' => $status_code )
@@ -427,8 +435,8 @@ class FediBoost_Boost {
 	public function handle_boost_error( $account_key, $status_code, $instance_url ) {
 		// On 401/403 (auth failure), mark account as disconnected.
 		if ( 401 === $status_code || 403 === $status_code ) {
-			$accounts = FediBoost_Accounts::get_instance();
-			$accounts->update_account_status( $account_key, FediBoost_Accounts::STATUS_DISCONNECTED );
+			$accounts = Accounts::get_instance();
+			$accounts->update_account_status( $account_key, Accounts::STATUS_DISCONNECTED );
 
 			$this->log_error(
 				'Account marked as disconnected due to auth failure',

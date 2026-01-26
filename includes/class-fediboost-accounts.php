@@ -4,19 +4,21 @@
  *
  * Provides helpers for managing connected Mastodon accounts data.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_Accounts class.
+ * Accounts class.
  *
  * Centralized account data management utilities.
  */
-class FediBoost_Accounts {
+class Accounts {
 
 	/**
 	 * Option key for storing accounts.
@@ -42,14 +44,14 @@ class FediBoost_Accounts {
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_Accounts|null
+	 * @var Accounts|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_Accounts
+	 * @return Accounts
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -264,10 +266,28 @@ class FediBoost_Accounts {
 	 * @param string $instance_url    The Mastodon instance URL.
 	 * @param string $username        The account username.
 	 * @param string $encrypted_token The encrypted OAuth token.
-	 * @return bool True on success, false on failure.
+	 * @return bool|\WP_Error True on success, false on failure, WP_Error if limit reached.
 	 */
 	public function add_account( $instance_url, $username, $encrypted_token ) {
 		$accounts = $this->get_all_accounts();
+
+		/**
+		 * Filters the maximum number of accounts that can be connected.
+		 *
+		 * @param int $max_accounts Maximum number of accounts. Default 10.
+		 */
+		$max_accounts = apply_filters( 'fediboost_max_accounts', 10 );
+
+		if ( count( $accounts ) >= $max_accounts ) {
+			return new \WP_Error(
+				'fediboost_max_accounts_reached',
+				sprintf(
+					/* translators: %d: Maximum number of accounts allowed */
+					__( 'Maximum number of connected accounts (%d) reached. Please remove an account before adding a new one.', 'fediboost' ),
+					$max_accounts
+				)
+			);
+		}
 
 		// Check if account already exists.
 		$hostname = wp_parse_url( $instance_url, PHP_URL_HOST );

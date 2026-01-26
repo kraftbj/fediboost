@@ -4,19 +4,21 @@
  *
  * Provides nonce verification, capability checks, and input sanitization.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_Security class.
+ * Security class.
  *
  * Centralized security utilities for the plugin.
  */
-class FediBoost_Security {
+class Security {
 
 	/**
 	 * Nonce action for OAuth connect form.
@@ -42,14 +44,24 @@ class FediBoost_Security {
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_Security|null
+	 * @var Security|null
 	 */
 	private static $instance = null;
 
 	/**
+	 * Last validated IP address from is_external_url().
+	 *
+	 * Stored so callers can pin the resolved IP to the subsequent HTTP request,
+	 * closing the TOCTOU gap between DNS validation and request dispatch.
+	 *
+	 * @var string|null
+	 */
+	private $pinned_ip = null;
+
+	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_Security
+	 * @return Security
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -248,12 +260,16 @@ class FediBoost_Security {
 	 * Validate that a URL host does not resolve to a private or reserved IP range.
 	 *
 	 * Checks both A (IPv4) and AAAA (IPv6) DNS records. Rejects the URL if any
-	 * resolved address is private or reserved.
+	 * resolved address is private or reserved. On success, stores the first valid
+	 * IP address so callers can pin the subsequent HTTP request via get_pinned_ip().
 	 *
 	 * @param string $url The URL to validate.
 	 * @return bool True if URL is safe to request, false otherwise.
 	 */
 	public function is_external_url( $url ) {
+		// Reset pinned IP on every call.
+		$this->pinned_ip = null;
+
 		$host = wp_parse_url( $url, PHP_URL_HOST );
 		if ( empty( $host ) ) {
 			return false;
@@ -294,6 +310,33 @@ class FediBoost_Security {
 			}
 		}
 
+		// Store the first validated IPv4 address for IP pinning.
+		// Prefer IPv4 because cURL CURLOPT_RESOLVE requires a concrete address and
+		// IPv4 is universally supported across hosting environments.
+		foreach ( $ips as $ip ) {
+			if ( false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+				$this->pinned_ip = $ip;
+				break;
+			}
+		}
+
+		// Fall back to the first address if no IPv4 was found.
+		if ( null === $this->pinned_ip ) {
+			$this->pinned_ip = $ips[0];
+		}
+
 		return true;
+	}
+
+	/**
+	 * Get the IP address validated by the last successful is_external_url() call.
+	 *
+	 * Callers should use this to pin the HTTP request to the resolved IP, closing
+	 * the TOCTOU window between DNS validation and the actual request.
+	 *
+	 * @return string|null The validated IP address, or null if not available.
+	 */
+	public function get_pinned_ip() {
+		return $this->pinned_ip;
 	}
 }

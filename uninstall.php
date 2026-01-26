@@ -12,6 +12,40 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
+// Attempt best-effort token revocation for all accounts.
+if ( ! defined( 'FEDIBOOST_PLUGIN_DIR' ) ) {
+	define( 'FEDIBOOST_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+}
+require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
+
+$accounts   = get_option( 'fediboost_accounts', array() );
+$encryption = FediBoost\Encryption::get_instance();
+$oauth      = FediBoost\OAuth::get_instance();
+
+foreach ( $accounts as $account ) {
+	if ( empty( $account['encrypted_token'] ) || empty( $account['instance_url'] ) ) {
+		continue;
+	}
+
+	$token = $encryption->decrypt( $account['encrypted_token'] );
+	if ( false === $token ) {
+		continue;
+	}
+
+	$credentials = $oauth->get_cached_app_credentials( $account['instance_url'] );
+	if ( false === $credentials ) {
+		continue;
+	}
+
+	// Best-effort revocation; ignore failures.
+	$oauth->revoke_token(
+		$account['instance_url'],
+		$token,
+		$credentials['client_id'],
+		$credentials['client_secret']
+	);
+}
+
 // Delete plugin options.
 delete_option( 'fediboost_accounts' );
 delete_option( 'fediboost_instance_apps' );

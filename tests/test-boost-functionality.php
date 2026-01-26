@@ -7,6 +7,11 @@
  * @package kraftbj/fediboost
  */
 
+use FediBoost\Accounts;
+use FediBoost\ActivityPub;
+use FediBoost\Boost;
+use FediBoost\Encryption;
+
 /**
  * Test_Boost_Functionality class.
  *
@@ -17,21 +22,21 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	/**
 	 * ActivityPub integration instance.
 	 *
-	 * @var FediBoost_ActivityPub
+	 * @var ActivityPub
 	 */
 	private $activitypub;
 
 	/**
 	 * Boost instance.
 	 *
-	 * @var FediBoost_Boost
+	 * @var Boost
 	 */
 	private $boost;
 
 	/**
 	 * Accounts helper instance.
 	 *
-	 * @var FediBoost_Accounts
+	 * @var Accounts
 	 */
 	private $accounts;
 
@@ -40,9 +45,9 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->activitypub = FediBoost_ActivityPub::get_instance();
-		$this->boost       = FediBoost_Boost::get_instance();
-		$this->accounts    = FediBoost_Accounts::get_instance();
+		$this->activitypub = ActivityPub::get_instance();
+		$this->boost       = Boost::get_instance();
+		$this->accounts    = Accounts::get_instance();
 
 		// Clear accounts and scheduled events before each test.
 		update_option( 'fediboost_accounts', array() );
@@ -178,7 +183,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function test_failed_reblog_marks_account_disconnected() {
 		// Add a connected account.
-		$encryption      = FediBoost_Encryption::get_instance();
+		$encryption      = Encryption::get_instance();
 		$encrypted_token = $encryption->encrypt( 'test_token' );
 
 		$this->accounts->add_account(
@@ -189,14 +194,15 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 
 		// Verify account is connected.
 		$accounts = $this->accounts->get_all_accounts();
-		$this->assertEquals( FediBoost_Accounts::STATUS_CONNECTED, $accounts[0]['status'] );
+		$this->assertEquals( Accounts::STATUS_CONNECTED, $accounts[0]['status'] );
 
-		// Simulate handling an auth failure (401/403).
-		$this->boost->handle_boost_error( 0, 401, 'mastodon.social' );
+		// Simulate handling an auth failure (401/403) using the stable account key.
+		$account_key = Accounts::generate_account_key( 'https://mastodon.social', 'testuser' );
+		$this->boost->handle_boost_error( $account_key, 401, 'mastodon.social' );
 
 		// Verify account is now disconnected.
 		$accounts = $this->accounts->get_all_accounts();
-		$this->assertEquals( FediBoost_Accounts::STATUS_DISCONNECTED, $accounts[0]['status'] );
+		$this->assertEquals( Accounts::STATUS_DISCONNECTED, $accounts[0]['status'] );
 	}
 
 	/**
@@ -204,7 +210,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function test_boost_continues_after_account_failure() {
 		// Add two accounts.
-		$encryption      = FediBoost_Encryption::get_instance();
+		$encryption      = Encryption::get_instance();
 		$encrypted_token = $encryption->encrypt( 'test_token' );
 
 		$this->accounts->add_account(
@@ -218,8 +224,9 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 			$encrypted_token
 		);
 
-		// Mark first account as disconnected (simulating failure).
-		$this->accounts->update_account_status( 0, FediBoost_Accounts::STATUS_DISCONNECTED );
+		// Mark first account as disconnected (simulating failure) using the stable account key.
+		$account_key = Accounts::generate_account_key( 'https://mastodon.social', 'user1' );
+		$this->accounts->update_account_status( $account_key, Accounts::STATUS_DISCONNECTED );
 
 		// Get connected accounts that would be processed.
 		$connected = $this->accounts->get_connected_accounts();

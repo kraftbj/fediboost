@@ -4,31 +4,33 @@
  *
  * Provides safe wrappers around ActivityPub plugin functions.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_ActivityPub class.
+ * ActivityPub class.
  *
  * Wraps ActivityPub plugin functions with availability checks and fallbacks.
  */
-class FediBoost_ActivityPub {
+class ActivityPub {
 
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_ActivityPub|null
+	 * @var ActivityPub|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_ActivityPub
+	 * @return ActivityPub
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -56,7 +58,7 @@ class FediBoost_ActivityPub {
 	/**
 	 * Check if a post is disabled from ActivityPub federation.
 	 *
-	 * @param WP_Post $post The post to check.
+	 * @param \WP_Post $post The post to check.
 	 * @return bool True if post is disabled, false if enabled for federation.
 	 */
 	public function is_post_disabled( $post ) {
@@ -130,7 +132,7 @@ class FediBoost_ActivityPub {
 	/**
 	 * Get the ActivityPub URL for a post using the transformer factory.
 	 *
-	 * @param WP_Post $post The post object.
+	 * @param \WP_Post $post The post object.
 	 * @return string|false The ActivityPub URL or false if unavailable.
 	 */
 	public function get_activitypub_url( $post ) {
@@ -202,7 +204,7 @@ class FediBoost_ActivityPub {
 	/**
 	 * Check if a post is eligible for boosting.
 	 *
-	 * @param WP_Post $post The post object.
+	 * @param \WP_Post $post The post object.
 	 * @return bool True if post should be boosted.
 	 */
 	public function is_post_eligible( $post ) {

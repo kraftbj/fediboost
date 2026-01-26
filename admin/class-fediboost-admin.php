@@ -4,24 +4,26 @@
  *
  * Handles admin menu, settings page, and account management UI.
  *
- * @package FediBoost
+ * @package kraftbj/fediboost
  */
+
+namespace FediBoost;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * FediBoost_Admin class.
+ * Admin class.
  *
  * Handles all admin functionality.
  */
-class FediBoost_Admin {
+class Admin {
 
 	/**
 	 * Single instance of the class.
 	 *
-	 * @var FediBoost_Admin|null
+	 * @var Admin|null
 	 */
 	private static $instance = null;
 
@@ -35,7 +37,7 @@ class FediBoost_Admin {
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return FediBoost_Admin
+	 * @return Admin
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -109,6 +111,9 @@ class FediBoost_Admin {
 	/**
 	 * Sanitize accounts option.
 	 *
+	 * Validates each account entry has required keys with correct types.
+	 * Entries that do not conform to the schema are removed.
+	 *
 	 * @param mixed $accounts The accounts value to sanitize.
 	 * @return array Sanitized accounts array.
 	 */
@@ -116,7 +121,40 @@ class FediBoost_Admin {
 		if ( ! is_array( $accounts ) ) {
 			return array();
 		}
-		return $accounts;
+
+		$valid_statuses = array( 'connected', 'disconnected' );
+		$sanitized      = array();
+
+		foreach ( $accounts as $account ) {
+			if ( ! is_array( $account ) ) {
+				continue;
+			}
+			if ( empty( $account['instance_url'] ) || ! is_string( $account['instance_url'] ) ) {
+				continue;
+			}
+			if ( empty( $account['username'] ) || ! is_string( $account['username'] ) ) {
+				continue;
+			}
+			if ( empty( $account['encrypted_token'] ) || ! is_string( $account['encrypted_token'] ) ) {
+				continue;
+			}
+			if ( ! isset( $account['status'] ) || ! in_array( $account['status'], $valid_statuses, true ) ) {
+				continue;
+			}
+			if ( ! isset( $account['connected_at'] ) || ! is_int( $account['connected_at'] ) ) {
+				continue;
+			}
+
+			$sanitized[] = array(
+				'instance_url'    => esc_url_raw( $account['instance_url'] ),
+				'username'        => sanitize_text_field( $account['username'] ),
+				'encrypted_token' => $account['encrypted_token'],
+				'status'          => $account['status'],
+				'connected_at'    => $account['connected_at'],
+			);
+		}
+
+		return $sanitized;
 	}
 
 	/**
@@ -143,10 +181,19 @@ class FediBoost_Admin {
 			FEDIBOOST_VERSION
 		);
 
-		wp_enqueue_script( 'fediboost-admin', '', array(), FEDIBOOST_VERSION, true );
-		wp_add_inline_script(
+		wp_enqueue_script(
 			'fediboost-admin',
-			'function fediboostConfirmDisconnect() { return confirm( "' . esc_js( __( 'Are you sure you want to disconnect this account?', 'fediboost' ) ) . '" ); }'
+			FEDIBOOST_PLUGIN_URL . 'admin/js/admin.js',
+			array(),
+			FEDIBOOST_VERSION,
+			true
+		);
+		wp_localize_script(
+			'fediboost-admin',
+			'fediboostAdmin',
+			array(
+				'confirmDisconnect' => __( 'Are you sure you want to disconnect this account?', 'fediboost' ),
+			)
 		);
 	}
 
@@ -217,7 +264,7 @@ class FediBoost_Admin {
 			return;
 		}
 
-		$accounts_helper = FediBoost_Accounts::get_instance();
+		$accounts_helper = Accounts::get_instance();
 		$disconnected    = $accounts_helper->get_disconnected_accounts();
 
 		if ( empty( $disconnected ) ) {
@@ -254,7 +301,7 @@ class FediBoost_Admin {
 	 * Initiates the OAuth flow by registering the app and redirecting to authorization.
 	 */
 	public function handle_connect_request() {
-		$security = FediBoost_Security::get_instance();
+		$security = Security::get_instance();
 
 		// Verify nonce and capability - nonce is verified via verify_connect_nonce() below.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
@@ -281,7 +328,7 @@ class FediBoost_Admin {
 		}
 
 		// Register OAuth app with the instance.
-		$oauth       = FediBoost_OAuth::get_instance();
+		$oauth       = OAuth::get_instance();
 		$credentials = $oauth->register_app( $instance_url );
 
 		if ( is_wp_error( $credentials ) ) {
@@ -309,7 +356,7 @@ class FediBoost_Admin {
 	 * Handle the OAuth callback from Mastodon.
 	 */
 	public function handle_oauth_callback() {
-		$security = FediBoost_Security::get_instance();
+		$security = Security::get_instance();
 
 		// Check user capability.
 		if ( ! $security->user_can_manage() ) {
@@ -347,7 +394,7 @@ class FediBoost_Admin {
 		}
 
 		// Verify state and get instance URL.
-		$oauth      = FediBoost_OAuth::get_instance();
+		$oauth      = OAuth::get_instance();
 		$state_data = $oauth->verify_state( $state );
 
 		if ( false === $state_data ) {
@@ -442,7 +489,7 @@ class FediBoost_Admin {
 			return;
 		}
 
-		$security = FediBoost_Security::get_instance();
+		$security = Security::get_instance();
 
 		// Get account key - nonce verified below.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -469,12 +516,15 @@ class FediBoost_Admin {
 		}
 
 		// Get account data before removal for cache clearing.
-		$accounts_helper = FediBoost_Accounts::get_instance();
+		$accounts_helper = Accounts::get_instance();
 		$account         = $accounts_helper->get_account_by_key( $account_key );
 
 		if ( $account ) {
 			// Clear cached data for the account.
 			$accounts_helper->clear_account_cache( $account );
+
+			// Best-effort token revocation with the Mastodon instance.
+			$this->revoke_account_token( $account );
 		}
 
 		// Remove the account.
@@ -491,6 +541,51 @@ class FediBoost_Admin {
 
 		wp_safe_redirect( $redirect_url );
 		exit;
+	}
+
+	/**
+	 * Attempt best-effort token revocation for an account.
+	 *
+	 * If revocation fails, the failure is logged but does not block
+	 * the disconnect flow.
+	 *
+	 * @param array $account The account data.
+	 */
+	private function revoke_account_token( $account ) {
+		if ( empty( $account['encrypted_token'] ) || empty( $account['instance_url'] ) ) {
+			return;
+		}
+
+		$encryption      = Encryption::get_instance();
+		$decrypted_token = $encryption->decrypt( $account['encrypted_token'] );
+
+		if ( false === $decrypted_token ) {
+			return;
+		}
+
+		$oauth       = OAuth::get_instance();
+		$credentials = $oauth->get_cached_app_credentials( $account['instance_url'] );
+
+		if ( false === $credentials ) {
+			return;
+		}
+
+		$result = $oauth->revoke_token(
+			$account['instance_url'],
+			$decrypted_token,
+			$credentials['client_id'],
+			$credentials['client_secret']
+		);
+
+		if ( is_wp_error( $result ) ) {
+			$this->log_error(
+				'Token revocation failed during disconnect',
+				array(
+					'instance' => $account['instance_url'],
+					'error'    => $result->get_error_message(),
+				)
+			);
+		}
 	}
 
 	/**
@@ -537,7 +632,7 @@ class FediBoost_Admin {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'fediboost' ) );
 		}
 
-		$accounts_helper = FediBoost_Accounts::get_instance();
+		$accounts_helper = Accounts::get_instance();
 		$accounts        = $accounts_helper->get_all_accounts();
 		?>
 		<div class="wrap">
@@ -598,7 +693,7 @@ class FediBoost_Admin {
 	 * @param array $accounts Array of connected accounts.
 	 */
 	private function render_accounts_table( $accounts ) {
-		$accounts_helper = FediBoost_Accounts::get_instance();
+		$accounts_helper = Accounts::get_instance();
 		?>
 		<table class="wp-list-table widefat fixed striped fediboost-accounts-table">
 			<thead>
@@ -611,7 +706,7 @@ class FediBoost_Admin {
 			</thead>
 			<tbody>
 				<?php foreach ( $accounts as $account ) : ?>
-					<?php $account_key = FediBoost_Accounts::generate_account_key( $account['instance_url'], $account['username'] ); ?>
+					<?php $account_key = Accounts::generate_account_key( $account['instance_url'], $account['username'] ); ?>
 					<tr>
 						<td>
 							<a href="<?php echo esc_url( $account['instance_url'] ); ?>" target="_blank" rel="noopener noreferrer">
@@ -622,7 +717,7 @@ class FediBoost_Admin {
 							<?php echo esc_html( $accounts_helper->format_username_display( $account ) ); ?>
 						</td>
 						<td>
-							<?php if ( FediBoost_Accounts::STATUS_CONNECTED === $account['status'] ) : ?>
+							<?php if ( Accounts::STATUS_CONNECTED === $account['status'] ) : ?>
 								<span class="fediboost-status fediboost-status-connected">
 									<?php esc_html_e( 'Connected', 'fediboost' ); ?>
 								</span>
@@ -646,7 +741,7 @@ class FediBoost_Admin {
 								'fediboost_disconnect_' . $account_key
 							);
 							?>
-							<a href="<?php echo esc_url( $disconnect_url ); ?>" class="button button-secondary" onclick="return fediboostConfirmDisconnect();" aria-label="<?php esc_attr_e( 'Disconnect this Mastodon account', 'fediboost' ); ?>">
+							<a href="<?php echo esc_url( $disconnect_url ); ?>" class="button button-secondary fediboost-disconnect-btn" aria-label="<?php esc_attr_e( 'Disconnect this Mastodon account', 'fediboost' ); ?>">
 								<?php esc_html_e( 'Disconnect', 'fediboost' ); ?>
 							</a>
 						</td>
@@ -672,8 +767,8 @@ class FediBoost_Admin {
 						<label for="instance_url"><?php esc_html_e( 'Mastodon Instance URL', 'fediboost' ); ?></label>
 					</th>
 					<td>
-						<input type="text" id="instance_url" name="instance_url" class="regular-text" placeholder="mastodon.social" required>
-						<p class="description">
+						<input type="text" id="instance_url" name="instance_url" class="regular-text" placeholder="mastodon.social" required aria-describedby="instance-url-description">
+						<p class="description" id="instance-url-description">
 							<?php esc_html_e( 'Enter your Mastodon instance domain (e.g., mastodon.social, fosstodon.org).', 'fediboost' ); ?>
 						</p>
 					</td>
