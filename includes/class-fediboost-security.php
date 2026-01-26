@@ -245,7 +245,10 @@ class FediBoost_Security {
 	}
 
 	/**
-	 * Validate that a URL host does not resolve to a private IP range.
+	 * Validate that a URL host does not resolve to a private or reserved IP range.
+	 *
+	 * Checks both A (IPv4) and AAAA (IPv6) DNS records. Rejects the URL if any
+	 * resolved address is private or reserved.
 	 *
 	 * @param string $url The URL to validate.
 	 * @return bool True if URL is safe to request, false otherwise.
@@ -256,26 +259,37 @@ class FediBoost_Security {
 			return false;
 		}
 
-		// Resolve hostname to IP.
-		$ip = gethostbyname( $host );
-		if ( $ip === $host ) {
-			return false; // Resolution failed.
+		$ips = array();
+
+		// Resolve both A and AAAA records when dns_get_record is available.
+		if ( function_exists( 'dns_get_record' ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- dns_get_record emits warnings on failure.
+			$records = @dns_get_record( $host, DNS_A | DNS_AAAA );
+
+			if ( is_array( $records ) ) {
+				foreach ( $records as $record ) {
+					if ( isset( $record['ip'] ) ) {
+						$ips[] = $record['ip'];
+					}
+					if ( isset( $record['ipv6'] ) ) {
+						$ips[] = $record['ipv6'];
+					}
+				}
+			}
 		}
 
-		// Check for private/reserved IP ranges.
-		$private_ranges = array(
-			'10.0.0.0|10.255.255.255',
-			'172.16.0.0|172.31.255.255',
-			'192.168.0.0|192.168.255.255',
-			'127.0.0.0|127.255.255.255',
-			'169.254.0.0|169.254.255.255',
-			'0.0.0.0|0.255.255.255',
-		);
+		// Fall back to gethostbyname if no records were found.
+		if ( empty( $ips ) ) {
+			$ip = gethostbyname( $host );
+			if ( $ip === $host ) {
+				return false; // Resolution failed entirely.
+			}
+			$ips[] = $ip;
+		}
 
-		$ip_long = ip2long( $ip );
-		foreach ( $private_ranges as $range ) {
-			list( $start, $end ) = explode( '|', $range );
-			if ( $ip_long >= ip2long( $start ) && $ip_long <= ip2long( $end ) ) {
+		// Reject if any resolved IP is private or reserved (covers IPv4 and IPv6).
+		foreach ( $ips as $ip ) {
+			if ( false === filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
 				return false;
 			}
 		}

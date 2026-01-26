@@ -33,6 +33,13 @@ class FediBoost_Encryption {
 	const IV_LENGTH = 16;
 
 	/**
+	 * Length of the HMAC-SHA256 tag.
+	 *
+	 * @var int
+	 */
+	const HMAC_LENGTH = 32;
+
+	/**
 	 * Single instance of the class.
 	 *
 	 * @var FediBoost_Encryption|null
@@ -45,6 +52,13 @@ class FediBoost_Encryption {
 	 * @var string|null
 	 */
 	private $encryption_key = null;
+
+	/**
+	 * Cached HMAC key.
+	 *
+	 * @var string|null
+	 */
+	private $hmac_key = null;
 
 	/**
 	 * Get singleton instance.
@@ -79,10 +93,28 @@ class FediBoost_Encryption {
 	}
 
 	/**
+	 * Get the HMAC key derived from WordPress secure_auth salt.
+	 *
+	 * Uses a different salt than the encryption key to ensure key separation.
+	 *
+	 * @return string The 32-byte HMAC key.
+	 */
+	private function get_hmac_key() {
+		if ( null === $this->hmac_key ) {
+			$salt           = wp_salt( 'secure_auth' );
+			$this->hmac_key = hash( 'sha256', $salt, true );
+		}
+		return $this->hmac_key;
+	}
+
+	/**
 	 * Encrypt a plaintext string.
 	 *
+	 * Produces base64(IV + ciphertext + HMAC-SHA256) where the HMAC covers
+	 * the IV and ciphertext to prevent padding oracle attacks.
+	 *
 	 * @param string $plaintext The plaintext string to encrypt.
-	 * @return string|false Base64-encoded encrypted string with IV prepended, or false on failure.
+	 * @return string|false Base64-encoded encrypted string, or false on failure.
 	 */
 	public function encrypt( $plaintext ) {
 		if ( ! is_string( $plaintext ) || '' === $plaintext ) {
@@ -112,14 +144,20 @@ class FediBoost_Encryption {
 			return false;
 		}
 
-		// Prepend IV to encrypted data and base64 encode.
-		return base64_encode( $iv . $encrypted );
+		$data = $iv . $encrypted;
+		$hmac = hash_hmac( 'sha256', $data, $this->get_hmac_key(), true );
+
+		return base64_encode( $data . $hmac );
 	}
 
 	/**
 	 * Decrypt an encrypted string.
 	 *
-	 * @param string $encrypted_data Base64-encoded encrypted string with IV prepended.
+	 * Accepts both the current HMAC-authenticated format and the legacy format
+	 * (without HMAC) for backward compatibility with tokens stored before the
+	 * HMAC addition. Legacy tokens are decrypted with a logged notice.
+	 *
+	 * @param string $encrypted_data Base64-encoded encrypted string.
 	 * @return string|false The decrypted plaintext, or false on failure.
 	 */
 	public function decrypt( $encrypted_data ) {
@@ -137,16 +175,36 @@ class FediBoost_Encryption {
 			return false;
 		}
 
-		// Verify we have at least IV + 1 byte of data.
-		if ( strlen( $decoded ) <= self::IV_LENGTH ) {
+		$decoded_length = strlen( $decoded );
+		$key            = $this->get_encryption_key();
+
+		// Try HMAC-authenticated format: IV + ciphertext + HMAC (32 bytes).
+		if ( $decoded_length > self::IV_LENGTH + self::HMAC_LENGTH ) {
+			$hmac          = substr( $decoded, -self::HMAC_LENGTH );
+			$data          = substr( $decoded, 0, -self::HMAC_LENGTH );
+			$expected_hmac = hash_hmac( 'sha256', $data, $this->get_hmac_key(), true );
+
+			if ( hash_equals( $expected_hmac, $hmac ) ) {
+				$iv        = substr( $data, 0, self::IV_LENGTH );
+				$encrypted = substr( $data, self::IV_LENGTH );
+
+				return openssl_decrypt(
+					$encrypted,
+					self::CIPHER_METHOD,
+					$key,
+					OPENSSL_RAW_DATA,
+					$iv
+				);
+			}
+		}
+
+		// Legacy fallback: IV + ciphertext without HMAC.
+		if ( $decoded_length <= self::IV_LENGTH ) {
 			return false;
 		}
 
-		// Extract IV from the beginning of the data.
 		$iv        = substr( $decoded, 0, self::IV_LENGTH );
 		$encrypted = substr( $decoded, self::IV_LENGTH );
-
-		$key = $this->get_encryption_key();
 
 		$decrypted = openssl_decrypt(
 			$encrypted,
@@ -155,6 +213,11 @@ class FediBoost_Encryption {
 			OPENSSL_RAW_DATA,
 			$iv
 		);
+
+		if ( false !== $decrypted && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( 'FediBoost: Decrypted token using legacy format without HMAC. Re-save to upgrade.' );
+		}
 
 		return $decrypted;
 	}

@@ -16,12 +16,13 @@ FediBoost is a well-structured WordPress plugin with a security-conscious design
 
 ## Findings
 
-### ISSUE 1: Encryption Lacks Authentication (No HMAC)
+### ISSUE 1: Encryption Lacks Authentication (No HMAC) — RESOLVED
 
 **Severity:** High
 **Effort to fix:** Low (1-2 hours)
 **Must fix before publish:** Yes
-**File:** `includes/class-fediboost-encryption.php:87-117`
+**Status:** Resolved — HMAC-SHA256 appended to ciphertext using a separate key derived from `secure_auth` salt. Legacy tokens without HMAC are accepted on decrypt with a logged notice.
+**File:** `includes/class-fediboost-encryption.php`
 
 The `encrypt()` method uses AES-256-CBC but does not include an HMAC (Hash-based Message Authentication Code) to verify ciphertext integrity. The stored format is `base64(IV + ciphertext)` with no authentication tag.
 
@@ -31,12 +32,13 @@ The `encrypt()` method uses AES-256-CBC but does not include an HMAC (Hash-based
 
 ---
 
-### ISSUE 2: SSRF Protection Does Not Cover IPv6
+### ISSUE 2: SSRF Protection Does Not Cover IPv6 — RESOLVED
 
 **Severity:** High
 **Effort to fix:** Low (1-2 hours)
 **Must fix before publish:** Yes
-**File:** `includes/class-fediboost-security.php:253-284`
+**Status:** Resolved — Replaced manual IPv4 range checks with `filter_var()` using `FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE`. Now checks both A and AAAA DNS records via `dns_get_record()`.
+**File:** `includes/class-fediboost-security.php`
 
 The `is_external_url()` method uses `gethostbyname()` which only resolves to IPv4 addresses, and the private range checks only cover IPv4 ranges. This leaves several gaps:
 
@@ -82,12 +84,13 @@ With client credentials, an attacker could impersonate the FediBoost application
 
 ---
 
-### ISSUE 5: Unsanitized `status_id` in URL Path Construction
+### ISSUE 5: Unsanitized `status_id` in URL Path Construction — RESOLVED
 
 **Severity:** Medium
 **Effort to fix:** Low (30 minutes)
 **Must fix before publish:** Yes
-**File:** `includes/class-fediboost-boost.php:396-403`
+**Status:** Resolved — `status_id` from search API response is validated against `/^[a-zA-Z0-9]+$/` before use in URL path construction.
+**File:** `includes/class-fediboost-boost.php`
 
 The `build_reblog_request()` method concatenates `$status_id` directly into the URL path:
 
@@ -254,11 +257,11 @@ The uninstall routine deletes all local data (options, transients) but does not 
 
 | # | Issue | Severity | Fix Effort | Must Fix? |
 |---|-------|----------|------------|-----------|
-| 1 | Encryption lacks HMAC authentication | High | Low | Yes |
-| 2 | SSRF protection does not cover IPv6 | High | Low | Yes |
+| 1 | ~~Encryption lacks HMAC authentication~~ | High | Low | Resolved |
+| 2 | ~~SSRF protection does not cover IPv6~~ | High | Low | Resolved |
 | 3 | DNS rebinding / TOCTOU in SSRF check | Medium | Medium | Recommended |
 | 4 | Client secrets stored unencrypted | Medium | Low | Recommended |
-| 5 | Unsanitized status_id in URL path | Medium | Low | Yes |
+| 5 | ~~Unsanitized status_id in URL path~~ | Medium | Low | Resolved |
 | 6 | No token revocation on disconnect | Medium-Low | Low | Recommended |
 | 7 | sanitize_accounts is a passthrough | Medium-Low | Low | Recommended |
 | 8 | Open redirect via OAuth flow | Low | Low | No |

@@ -324,8 +324,21 @@ class FediBoost_Boost {
 			return false;
 		}
 
-		// Return the first status ID.
-		return $data['statuses'][0]['id'];
+		$status_id = $data['statuses'][0]['id'];
+
+		// Validate status ID format (numeric or alphanumeric only).
+		if ( ! is_string( $status_id ) || ! preg_match( '/^[a-zA-Z0-9]+$/', $status_id ) ) {
+			$this->log_error(
+				'Invalid status ID format from remote instance',
+				array(
+					'instance'  => $instance_url,
+					'status_id' => is_string( $status_id ) ? $status_id : gettype( $status_id ),
+				)
+			);
+			return false;
+		}
+
+		return $status_id;
 	}
 
 	/**
