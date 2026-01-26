@@ -1,12 +1,13 @@
 <?php
 /**
- * Admin UI Tests
- *
  * Tests for the multi-account management interface.
  *
  * @package Auto_Tooter
  */
 
+/**
+ * Admin UI Tests
+ */
 class Test_Admin_UI extends WP_UnitTestCase {
 
 	/**

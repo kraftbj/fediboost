@@ -2,11 +2,12 @@
 /**
  * Plugin Foundation Tests
  *
- * Tests for plugin activation, deactivation, admin menu, and dependency checks.
- *
  * @package Auto_Tooter
  */
 
+/**
+ * Tests for plugin activation, deactivation, admin menu, and dependency checks.
+ */
 class Test_Plugin_Foundation extends WP_UnitTestCase {
 
 	/**

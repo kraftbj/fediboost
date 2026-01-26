@@ -103,16 +103,6 @@ function fediboost_deactivate() {
 
 	// Remove the ActivityPub notice flag.
 	delete_option( 'fediboost_show_activitypub_notice' );
-
-	// Clean up any pending OAuth state transients.
-	global $wpdb;
-	$wpdb->query(
-		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-			$wpdb->esc_like( '_transient_fediboost_oauth_state_' ) . '%',
-			$wpdb->esc_like( '_transient_timeout_fediboost_oauth_state_' ) . '%'
-		)
-	);
 }
 
 /**

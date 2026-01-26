@@ -1,12 +1,17 @@
 <?php
 /**
+ * Tests for Mastodon OAuth 2.0 authentication flow.
+ *
+ * @package Auto_Tooter
+ */
+
+/**
  * OAuth Flow Tests
  *
  * Tests for Mastodon OAuth 2.0 authentication flow.
  *
  * @package Auto_Tooter
  */
-
 class Test_OAuth_Flow extends WP_UnitTestCase {
 
 	/**

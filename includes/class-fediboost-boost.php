@@ -125,7 +125,7 @@ class FediBoost_Boost {
 			return false;
 		}
 
-		$delay = apply_filters( 'fediboost_boost_delay', self::BOOST_DELAY );
+		$delay          = apply_filters( 'fediboost_boost_delay', self::BOOST_DELAY );
 		$scheduled_time = time() + $delay;
 
 		$result = wp_schedule_single_event( $scheduled_time, self::CRON_HOOK, array( $post_id ) );

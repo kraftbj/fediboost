@@ -98,7 +98,7 @@ class FediBoost_OAuth {
 
 		// Rate limit: max 5 registration attempts per hour per instance.
 		$rate_limit_key = 'fediboost_oauth_rate_' . md5( $instance_url );
-		$attempts = get_transient( $rate_limit_key );
+		$attempts       = get_transient( $rate_limit_key );
 		if ( false !== $attempts && $attempts >= 5 ) {
 			return new WP_Error(
 				'rate_limited',
@@ -247,7 +247,7 @@ class FediBoost_OAuth {
 		}
 
 		// Verify the state belongs to the current user.
-		if ( isset( $state_data['user_id'] ) && $state_data['user_id'] !== get_current_user_id() ) {
+		if ( isset( $state_data['user_id'] ) && get_current_user_id() !== $state_data['user_id'] ) {
 			return false;
 		}
 

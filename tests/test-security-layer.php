@@ -7,6 +7,9 @@
  * @package Auto_Tooter
  */
 
+/**
+ * Class Test_Security_Layer
+ */
 class Test_Security_Layer extends WP_UnitTestCase {
 
 	/**
@@ -147,6 +150,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 		$this->assertFalse( $encryption->decrypt( '!!!not-valid-base64!!!' ) );
 
 		// Too short data (less than IV length).
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 		$this->assertFalse( $encryption->decrypt( base64_encode( 'short' ) ) );
 	}
 }

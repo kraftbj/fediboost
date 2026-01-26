@@ -147,6 +147,7 @@ class FediBoost_Encryption {
 		$data = $iv . $encrypted;
 		$hmac = hash_hmac( 'sha256', $data, $this->get_hmac_key(), true );
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 		return base64_encode( $data . $hmac );
 	}
 
@@ -169,6 +170,7 @@ class FediBoost_Encryption {
 			return false;
 		}
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		$decoded = base64_decode( $encrypted_data, true );
 
 		if ( false === $decoded ) {

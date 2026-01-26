@@ -140,6 +140,7 @@ class Test_Integration extends WP_UnitTestCase {
 		$encryption = Auto_Tooter_Encryption::get_instance();
 
 		// Simulate corrupted/invalid encrypted data.
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 		$invalid_data = base64_encode( 'this_is_not_valid_encrypted_data_at_all' );
 
 		$result = $encryption->decrypt( $invalid_data );
