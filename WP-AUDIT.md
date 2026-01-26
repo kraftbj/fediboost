@@ -37,32 +37,29 @@ The current manual detection in `fediboost_check_activitypub_dependency()` and t
 
 ---
 
-#### ISSUE 2: readme.txt Installation Instructions Are Inaccurate
+#### ISSUE 2: readme.txt Installation Instructions Are Inaccurate — RESOLVED
 
 **Priority:** Medium
 **Category:** Plugin Directory compliance
 **File:** `readme.txt:32-36`
+**Status:** Fixed on January 26, 2026. Replaced inaccurate installation instructions with the correct flow: install, activate, navigate to Settings > FediBoost, enter a Mastodon instance URL, and authorize the connection.
 
-The installation instructions say:
+The installation instructions previously said:
 
 > Configure your Mastodon account connection through the ActivityPub plugin settings.
 
-FediBoost has its own settings page (`Settings > FediBoost`) with its own OAuth connection flow. The instructions should describe the actual user flow: install, activate, navigate to Settings > FediBoost, enter a Mastodon instance URL, and authorize the app.
+FediBoost has its own settings page (`Settings > FediBoost`) with its own OAuth connection flow.
 
 ---
 
-#### ISSUE 3: readme.txt Missing Privacy/External Services Section
+#### ISSUE 3: readme.txt Missing Privacy/External Services Section — RESOLVED
 
 **Priority:** Medium
 **Category:** Plugin Directory compliance
 **File:** `readme.txt`
+**Status:** Fixed on January 26, 2026. Added an "External Services" section to readme.txt disclosing Mastodon instance communication, data sent/stored, and a link to instance privacy policies.
 
-The plugin communicates with external Mastodon instances (sending OAuth requests, searching for statuses, performing reblogs) and stores OAuth tokens. The WordPress.org plugin directory guidelines require disclosure of external service communication. A section should describe:
-
-- Which external services are contacted and when.
-- What data is sent (instance URL, authorization codes, search queries).
-- What data is stored (encrypted OAuth tokens, usernames, instance URLs).
-- A link to Mastodon's privacy policy / terms (or note that each instance has its own).
+The plugin communicates with external Mastodon instances (sending OAuth requests, searching for statuses, performing reblogs) and stores OAuth tokens. The WordPress.org plugin directory guidelines require disclosure of external service communication.
 
 ---
 
@@ -333,8 +330,8 @@ No issues with the test infrastructure itself. The test coverage areas (foundati
 | # | Issue | Priority | Category |
 |---|-------|----------|----------|
 | 1 | ~~Missing `Requires Plugins` header~~ | ~~High~~ | RESOLVED |
-| 2 | readme.txt installation instructions inaccurate | Medium | Plugin Directory |
-| 3 | readme.txt missing privacy/external services section | Medium | Plugin Directory |
+| 2 | ~~readme.txt installation instructions inaccurate~~ | ~~Medium~~ | RESOLVED |
+| 3 | ~~readme.txt missing privacy/external services section~~ | ~~Medium~~ | RESOLVED |
 | 4 | Missing `@since` tags on all methods and hooks | Medium | WPCS Documentation |
 | 5 | Global functions in main plugin file | Low | Code organization |
 | 6 | No PHP namespaces | Low | Modern PHP |

@@ -29,11 +29,12 @@ When you publish a new post on your WordPress site, FediBoost will automatically
 
 == Installation ==
 
-1. Ensure the ActivityPub plugin is installed and activated on your WordPress site.
-2. Configure your Mastodon account connection through the ActivityPub plugin settings.
-3. Upload the `fediboost` folder to the `/wp-content/plugins/` directory.
-4. Activate the FediBoost plugin through the 'Plugins' menu in WordPress.
-5. New posts will automatically be boosted to your connected Mastodon account when published.
+1. Ensure the ActivityPub plugin is installed and activated.
+2. Upload the `fediboost` folder to `/wp-content/plugins/` or install via the WordPress plugin installer.
+3. Activate FediBoost through the Plugins menu.
+4. Go to Settings > FediBoost.
+5. Enter your Mastodon instance URL (e.g., mastodon.social) and authorize the connection.
+6. New posts will automatically be boosted to your connected Mastodon account when published.
 
 == Frequently Asked Questions ==
 
@@ -44,6 +45,35 @@ No, FediBoost requires the ActivityPub plugin to be installed and properly confi
 = Can I choose which posts get boosted? =
 
 Currently, FediBoost will boost all newly published posts. Future versions may include options to selectively boost posts based on categories, tags, or other criteria.
+
+== External Services ==
+
+FediBoost connects to external Mastodon instances that you configure (e.g., mastodon.social). This communication is essential for the plugin to function and is initiated only with the instance you explicitly provide.
+
+**During setup:**
+
+* FediBoost registers an OAuth application on your Mastodon instance and performs an authorization flow so it can act on your behalf.
+
+**When a post is published:**
+
+* FediBoost searches for the post on your Mastodon instance and performs a reblog (boost) via the Mastodon API.
+
+**Data sent to your Mastodon instance:**
+
+* Your instance URL
+* OAuth authorization codes
+* Search queries to locate your posts
+* Reblog (boost) requests
+
+**Data stored locally on your WordPress site:**
+
+* Encrypted OAuth tokens
+* Your Mastodon username
+* Your Mastodon instance URL
+
+Each Mastodon instance has its own privacy policy and terms of service. You can find a list of instances and their policies at [joinmastodon.org/servers](https://joinmastodon.org/servers).
+
+This plugin does not send data to any third-party service other than the Mastodon instance(s) you explicitly configure.
 
 == Changelog ==
 
