@@ -2,5 +2,5 @@
 /**
  * Silence is golden.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */

@@ -4,7 +4,7 @@
  *
  * Tests for encryption, nonce verification, capability checks, and input sanitization.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 
 /**
@@ -16,7 +16,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test that token encryption produces different output than input.
 	 */
 	public function test_encryption_produces_different_output_than_input() {
-		$encryption = Auto_Tooter_Encryption::get_instance();
+		$encryption = FediBoost_Encryption::get_instance();
 		$plaintext  = 'test_oauth_token_12345';
 
 		$encrypted = $encryption->encrypt( $plaintext );
@@ -30,7 +30,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test that token decryption recovers the original value.
 	 */
 	public function test_decryption_recovers_original_value() {
-		$encryption = Auto_Tooter_Encryption::get_instance();
+		$encryption = FediBoost_Encryption::get_instance();
 		$plaintext  = 'test_oauth_token_with_special_chars_!@#$%';
 
 		$encrypted = $encryption->encrypt( $plaintext );
@@ -43,10 +43,10 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test that nonce verification rejects invalid nonces.
 	 */
 	public function test_nonce_verification_rejects_invalid_nonces() {
-		$security = Auto_Tooter_Security::get_instance();
+		$security = FediBoost_Security::get_instance();
 
 		$invalid_nonce = 'invalid_nonce_value_12345';
-		$action        = 'auto_tooter_connect';
+		$action        = 'fediboost_connect';
 
 		$result = $security->verify_nonce( $invalid_nonce, $action );
 
@@ -57,9 +57,9 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test that nonce verification accepts valid nonces.
 	 */
 	public function test_nonce_verification_accepts_valid_nonces() {
-		$security = Auto_Tooter_Security::get_instance();
+		$security = FediBoost_Security::get_instance();
 
-		$action = 'auto_tooter_connect';
+		$action = 'fediboost_connect';
 		$nonce  = wp_create_nonce( $action );
 
 		$result = $security->verify_nonce( $nonce, $action );
@@ -71,7 +71,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test that capability check blocks unauthorized users.
 	 */
 	public function test_capability_check_blocks_unauthorized_users() {
-		$security = Auto_Tooter_Security::get_instance();
+		$security = FediBoost_Security::get_instance();
 
 		// Create a subscriber (no manage_options capability).
 		$subscriber = self::factory()->user->create( array( 'role' => 'subscriber' ) );
@@ -92,7 +92,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test sanitization of instance URLs.
 	 */
 	public function test_sanitization_of_instance_urls() {
-		$security = Auto_Tooter_Security::get_instance();
+		$security = FediBoost_Security::get_instance();
 
 		// Valid URL with HTTPS.
 		$this->assertEquals(
@@ -134,7 +134,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test encryption with empty input returns false.
 	 */
 	public function test_encryption_with_empty_input_returns_false() {
-		$encryption = Auto_Tooter_Encryption::get_instance();
+		$encryption = FediBoost_Encryption::get_instance();
 
 		$this->assertFalse( $encryption->encrypt( '' ) );
 		$this->assertFalse( $encryption->decrypt( '' ) );
@@ -144,7 +144,7 @@ class Test_Security_Layer extends WP_UnitTestCase {
 	 * Test decryption with invalid data returns false.
 	 */
 	public function test_decryption_with_invalid_data_returns_false() {
-		$encryption = Auto_Tooter_Encryption::get_instance();
+		$encryption = FediBoost_Encryption::get_instance();
 
 		// Invalid base64.
 		$this->assertFalse( $encryption->decrypt( '!!!not-valid-base64!!!' ) );

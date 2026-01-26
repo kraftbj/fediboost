@@ -4,7 +4,7 @@
  *
  * Tests for ActivityPub integration and auto-boost functionality.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 
 /**
@@ -17,21 +17,21 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	/**
 	 * ActivityPub integration instance.
 	 *
-	 * @var Auto_Tooter_ActivityPub
+	 * @var FediBoost_ActivityPub
 	 */
 	private $activitypub;
 
 	/**
 	 * Boost instance.
 	 *
-	 * @var Auto_Tooter_Boost
+	 * @var FediBoost_Boost
 	 */
 	private $boost;
 
 	/**
 	 * Accounts helper instance.
 	 *
-	 * @var Auto_Tooter_Accounts
+	 * @var FediBoost_Accounts
 	 */
 	private $accounts;
 
@@ -40,21 +40,21 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->activitypub = Auto_Tooter_ActivityPub::get_instance();
-		$this->boost       = Auto_Tooter_Boost::get_instance();
-		$this->accounts    = Auto_Tooter_Accounts::get_instance();
+		$this->activitypub = FediBoost_ActivityPub::get_instance();
+		$this->boost       = FediBoost_Boost::get_instance();
+		$this->accounts    = FediBoost_Accounts::get_instance();
 
 		// Clear accounts and scheduled events before each test.
-		update_option( 'auto_tooter_accounts', array() );
-		wp_clear_scheduled_hook( 'auto_tooter_boost_post' );
+		update_option( 'fediboost_accounts', array() );
+		wp_clear_scheduled_hook( 'fediboost_boost_post' );
 	}
 
 	/**
 	 * Tear down test environment.
 	 */
 	public function tear_down() {
-		update_option( 'auto_tooter_accounts', array() );
-		wp_clear_scheduled_hook( 'auto_tooter_boost_post' );
+		update_option( 'fediboost_accounts', array() );
+		wp_clear_scheduled_hook( 'fediboost_boost_post' );
 		parent::tear_down();
 	}
 
@@ -128,13 +128,13 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 		);
 
 		// Verify no scheduled event exists.
-		$this->assertFalse( wp_next_scheduled( 'auto_tooter_boost_post', array( $post_id ) ) );
+		$this->assertFalse( wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
 
 		// Schedule the boost directly (simulating what would happen on publish).
 		$this->boost->schedule_boost( $post_id );
 
 		// Verify the event is now scheduled.
-		$scheduled = wp_next_scheduled( 'auto_tooter_boost_post', array( $post_id ) );
+		$scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
 		$this->assertNotFalse( $scheduled );
 
 		// Verify it's scheduled for approximately 30 seconds in the future.
@@ -178,7 +178,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function test_failed_reblog_marks_account_disconnected() {
 		// Add a connected account.
-		$encryption      = Auto_Tooter_Encryption::get_instance();
+		$encryption      = FediBoost_Encryption::get_instance();
 		$encrypted_token = $encryption->encrypt( 'test_token' );
 
 		$this->accounts->add_account(
@@ -189,14 +189,14 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 
 		// Verify account is connected.
 		$accounts = $this->accounts->get_all_accounts();
-		$this->assertEquals( Auto_Tooter_Accounts::STATUS_CONNECTED, $accounts[0]['status'] );
+		$this->assertEquals( FediBoost_Accounts::STATUS_CONNECTED, $accounts[0]['status'] );
 
 		// Simulate handling an auth failure (401/403).
 		$this->boost->handle_boost_error( 0, 401, 'mastodon.social' );
 
 		// Verify account is now disconnected.
 		$accounts = $this->accounts->get_all_accounts();
-		$this->assertEquals( Auto_Tooter_Accounts::STATUS_DISCONNECTED, $accounts[0]['status'] );
+		$this->assertEquals( FediBoost_Accounts::STATUS_DISCONNECTED, $accounts[0]['status'] );
 	}
 
 	/**
@@ -204,7 +204,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function test_boost_continues_after_account_failure() {
 		// Add two accounts.
-		$encryption      = Auto_Tooter_Encryption::get_instance();
+		$encryption      = FediBoost_Encryption::get_instance();
 		$encrypted_token = $encryption->encrypt( 'test_token' );
 
 		$this->accounts->add_account(
@@ -219,7 +219,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 		);
 
 		// Mark first account as disconnected (simulating failure).
-		$this->accounts->update_account_status( 0, Auto_Tooter_Accounts::STATUS_DISCONNECTED );
+		$this->accounts->update_account_status( 0, FediBoost_Accounts::STATUS_DISCONNECTED );
 
 		// Get connected accounts that would be processed.
 		$connected = $this->accounts->get_connected_accounts();

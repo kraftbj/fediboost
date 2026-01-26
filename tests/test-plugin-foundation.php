@@ -2,7 +2,7 @@
 /**
  * Plugin Foundation Tests
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 
 /**
@@ -14,28 +14,28 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	 * Test that activation hook initializes default options.
 	 */
 	public function test_activation_hook_initializes_options() {
-		delete_option( 'auto_tooter_activated' );
-		delete_option( 'auto_tooter_accounts' );
+		delete_option( 'fediboost_activated' );
+		delete_option( 'fediboost_accounts' );
 
-		auto_tooter_activate();
+		fediboost_activate();
 
-		$this->assertEquals( '1', get_option( 'auto_tooter_activated' ) );
-		$this->assertIsArray( get_option( 'auto_tooter_accounts' ) );
+		$this->assertEquals( '1', get_option( 'fediboost_activated' ) );
+		$this->assertIsArray( get_option( 'fediboost_accounts' ) );
 	}
 
 	/**
 	 * Test that deactivation hook clears scheduled events.
 	 */
 	public function test_deactivation_hook_clears_scheduled_events() {
-		wp_schedule_single_event( time() + 3600, 'auto_tooter_boost_post', array( 123 ) );
-		wp_schedule_single_event( time() + 3600, 'auto_tooter_boost_post', array( 456 ) );
+		wp_schedule_single_event( time() + 3600, 'fediboost_boost_post', array( 123 ) );
+		wp_schedule_single_event( time() + 3600, 'fediboost_boost_post', array( 456 ) );
 
-		$this->assertNotFalse( wp_next_scheduled( 'auto_tooter_boost_post', array( 123 ) ) );
+		$this->assertNotFalse( wp_next_scheduled( 'fediboost_boost_post', array( 123 ) ) );
 
-		auto_tooter_deactivate();
+		fediboost_deactivate();
 
-		$this->assertFalse( wp_next_scheduled( 'auto_tooter_boost_post', array( 123 ) ) );
-		$this->assertFalse( wp_next_scheduled( 'auto_tooter_boost_post', array( 456 ) ) );
+		$this->assertFalse( wp_next_scheduled( 'fediboost_boost_post', array( 123 ) ) );
+		$this->assertFalse( wp_next_scheduled( 'fediboost_boost_post', array( 456 ) ) );
 	}
 
 	/**
@@ -54,12 +54,12 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 
 		$menu_found = false;
 		foreach ( $submenu['options-general.php'] as $menu_item ) {
-			if ( in_array( 'auto-tooter', $menu_item, true ) ) {
+			if ( in_array( 'fediboost', $menu_item, true ) ) {
 				$menu_found = true;
 				break;
 			}
 		}
-		$this->assertTrue( $menu_found, 'Auto Tooter menu should appear under Settings' );
+		$this->assertTrue( $menu_found, 'FediBoost menu should appear under Settings' );
 	}
 
 	/**
@@ -86,8 +86,8 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 		set_current_screen( 'dashboard' );
 
 		ob_start();
-		auto_tooter_check_activitypub_dependency();
-		auto_tooter_activitypub_missing_notice();
+		fediboost_check_activitypub_dependency();
+		fediboost_activitypub_missing_notice();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'ActivityPub', $output );
@@ -98,9 +98,9 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	 * Test that plugin constants are defined correctly.
 	 */
 	public function test_plugin_constants_defined() {
-		$this->assertTrue( defined( 'AUTO_TOOTER_VERSION' ) );
-		$this->assertTrue( defined( 'AUTO_TOOTER_PLUGIN_DIR' ) );
-		$this->assertTrue( defined( 'AUTO_TOOTER_PLUGIN_URL' ) );
-		$this->assertTrue( defined( 'AUTO_TOOTER_PLUGIN_FILE' ) );
+		$this->assertTrue( defined( 'FEDIBOOST_VERSION' ) );
+		$this->assertTrue( defined( 'FEDIBOOST_PLUGIN_DIR' ) );
+		$this->assertTrue( defined( 'FEDIBOOST_PLUGIN_URL' ) );
+		$this->assertTrue( defined( 'FEDIBOOST_PLUGIN_FILE' ) );
 	}
 }

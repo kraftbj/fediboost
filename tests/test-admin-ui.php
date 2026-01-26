@@ -2,7 +2,7 @@
 /**
  * Tests for the multi-account management interface.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 
 /**
@@ -13,7 +13,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	/**
 	 * Accounts helper instance.
 	 *
-	 * @var Auto_Tooter_Accounts
+	 * @var FediBoost_Accounts
 	 */
 	private $accounts;
 
@@ -22,9 +22,9 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->accounts = Auto_Tooter_Accounts::get_instance();
+		$this->accounts = FediBoost_Accounts::get_instance();
 		// Clear accounts before each test.
-		update_option( 'auto_tooter_accounts', array() );
+		update_option( 'fediboost_accounts', array() );
 	}
 
 	/**
@@ -32,7 +32,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	 */
 	public function tear_down() {
 		// Clean up accounts after each test.
-		update_option( 'auto_tooter_accounts', array() );
+		update_option( 'fediboost_accounts', array() );
 		parent::tear_down();
 	}
 
@@ -52,7 +52,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
-		$admin = Auto_Tooter_Admin::get_instance();
+		$admin = FediBoost_Admin::get_instance();
 		ob_start();
 		$admin->render_settings_page();
 		$output = ob_get_clean();
@@ -108,15 +108,15 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
-		$admin = Auto_Tooter_Admin::get_instance();
+		$admin = FediBoost_Admin::get_instance();
 		ob_start();
 		$admin->render_settings_page();
 		$output = ob_get_clean();
 
 		// Verify form structure.
 		$this->assertStringContainsString( 'action="', $output );
-		$this->assertStringContainsString( 'auto_tooter_connect', $output );
-		$this->assertStringContainsString( 'auto_tooter_nonce', $output );
+		$this->assertStringContainsString( 'fediboost_connect', $output );
+		$this->assertStringContainsString( 'fediboost_nonce', $output );
 		$this->assertStringContainsString( 'instance_url', $output );
 		$this->assertStringContainsString( 'placeholder="mastodon.social"', $output );
 		$this->assertStringContainsString( 'Connect Account', $output );
@@ -130,10 +130,10 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
-		$admin = Auto_Tooter_Admin::get_instance();
+		$admin = FediBoost_Admin::get_instance();
 
 		// Test success notice.
-		$_GET['page']   = 'auto-tooter';
+		$_GET['page']   = 'fediboost';
 		$_GET['notice'] = 'connected';
 		$_GET['error']  = '';
 
@@ -182,13 +182,13 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
-		$admin = Auto_Tooter_Admin::get_instance();
+		$admin = FediBoost_Admin::get_instance();
 		ob_start();
 		$admin->render_settings_page();
 		$output = ob_get_clean();
 
 		// Verify empty state message.
-		$this->assertStringContainsString( 'auto-tooter-empty-state', $output );
+		$this->assertStringContainsString( 'fediboost-empty-state', $output );
 		$this->assertStringContainsString( 'No Mastodon accounts connected yet', $output );
 		$this->assertStringContainsString( 'Connect your first account', $output );
 
@@ -206,13 +206,13 @@ class Test_Admin_UI extends WP_UnitTestCase {
 			'testuser',
 			'token'
 		);
-		$this->accounts->update_account_status( 0, Auto_Tooter_Accounts::STATUS_DISCONNECTED );
+		$this->accounts->update_account_status( 0, FediBoost_Accounts::STATUS_DISCONNECTED );
 
 		// Create admin user.
 		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
-		$admin = Auto_Tooter_Admin::get_instance();
+		$admin = FediBoost_Admin::get_instance();
 
 		ob_start();
 		$admin->display_reconnection_warning();

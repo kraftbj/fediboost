@@ -160,15 +160,12 @@ Consider a centralized hook registration approach, or at minimum document in the
 
 ### INTERNATIONALIZATION
 
-#### ISSUE 11: No `.pot` File Included
+#### ISSUE 11: No `.pot` File Included — N/A
 
 **Priority:** Medium
 **Category:** i18n
 **Files:** Project root
-
-The plugin uses `__()`, `esc_html__()`, `esc_html_e()`, and `_n()` correctly throughout with the `fediboost` text domain. However, no `.pot` (Portable Object Template) file is generated or included. Translators need this file to create translations.
-
-**Recommendation:** Generate with `wp i18n make-pot . languages/fediboost.pot` and include a `languages/` directory in the distribution.
+**Status:** Not applicable. Plugin will be hosted on WordPress.org and use translate.wordpress.org for translations. A bundled `.pot` file is not needed.
 
 ---
 
@@ -247,34 +244,25 @@ The `agent-os/` directory contains project management metadata (specs, planning 
 
 ---
 
-#### ISSUE 17: `.distignore` and Build Script Are Not in Sync
+#### ISSUE 17: `.distignore` and Build Script Are Not in Sync — RESOLVED
 
 **Priority:** Medium
 **Category:** Distribution
 **File:** `composer.json:20-28`, `.distignore`
+**Status:** Fixed on January 26, 2026. Added `.idea/` and `phpcs.xml` to `.distignore`. All non-distributed files and directories are now excluded, matching the build script's allowlist.
 
-The build script in `composer.json` explicitly copies specific files/directories into `dist/`:
-
-```json
-"cp fediboost.php dist/fediboost/",
-"cp index.php dist/fediboost/",
-"cp readme.txt dist/fediboost/",
-"cp uninstall.php dist/fediboost/",
-"cp -r includes dist/fediboost/",
-"cp -r admin dist/fediboost/"
-```
-
-This is an allowlist approach (only copies what's listed), which means `.distignore` is actually redundant for the build — the build already excludes `agent-os/`, tests, etc. because they're not in the copy list. However, `.distignore` is also used by tools like `wp dist-archive` and GitHub Actions release workflows. The two should be kept consistent. Currently `.distignore` would suggest different behavior than the actual build script.
+The build script in `composer.json` explicitly copies specific files/directories into `dist/`. The `.distignore` is also used by tools like `wp dist-archive` and GitHub Actions release workflows. The two are now consistent.
 
 ---
 
-#### ISSUE 18: No `index.php` in Subdirectories
+#### ISSUE 18: No `index.php` in Subdirectories — RESOLVED
 
 **Priority:** Low
 **Category:** WordPress convention
 **Files:** `includes/`, `admin/`, `admin/css/`
+**Status:** Fixed on January 26, 2026. Added `index.php` ("Silence is golden") to `includes/`, `admin/`, and `admin/css/`.
 
-Only the root directory has an `index.php` ("Silence is golden"). The `includes/` and `admin/` directories lack them. While modern web servers typically prevent directory listing, the WordPress convention is to include `index.php` files in all plugin subdirectories. The WordPress Plugin Review team may flag this.
+All plugin subdirectories now include the standard WordPress directory listing protection file.
 
 ---
 
@@ -339,14 +327,14 @@ No issues with the test infrastructure itself. The test coverage areas (foundati
 | 8 | ~~Stale array index on disconnect (functional bug)~~ | ~~High~~ | RESOLVED |
 | 9 | Singleton pattern overuse | Low | Architecture |
 | 10 | Mixed hook registration locations | Low | Code organization |
-| 11 | No `.pot` file for translations | Medium | i18n |
+| 11 | ~~No `.pot` file for translations~~ | ~~Medium~~ | N/A (translate.wordpress.org) |
 | 12 | Developer filter hooks undocumented | Medium | Documentation |
 | 13 | Missing `aria-describedby` on input | Low | Accessibility |
 | 14 | Inline script uses empty source handle | Low | Asset management |
 | 15 | CSS uses hardcoded colors | Low | CSS |
 | 16 | ~~`.distignore` missing `agent-os/` directory~~ | ~~High~~ | RESOLVED |
-| 17 | `.distignore` and build script not in sync | Medium | Distribution |
-| 18 | No `index.php` in subdirectories | Low | WP convention |
+| 17 | ~~`.distignore` and build script not in sync~~ | ~~Medium~~ | RESOLVED |
+| 18 | ~~No `index.php` in subdirectories~~ | ~~Low~~ | RESOLVED |
 | 19 | No cron retry/cleanup mechanism | Low | Performance |
 | 20 | OpenSSL dependency not declared to users | Medium | Requirements |
 | 21 | Test coverage gaps | Low | Testing |

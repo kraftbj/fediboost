@@ -2,7 +2,7 @@
 /**
  * Tests for Mastodon OAuth 2.0 authentication flow.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 
 /**
@@ -10,14 +10,14 @@
  *
  * Tests for Mastodon OAuth 2.0 authentication flow.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 class Test_OAuth_Flow extends WP_UnitTestCase {
 
 	/**
 	 * OAuth instance.
 	 *
-	 * @var Auto_Tooter_OAuth
+	 * @var FediBoost_OAuth
 	 */
 	private $oauth;
 
@@ -26,19 +26,19 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		$this->oauth = Auto_Tooter_OAuth::get_instance();
+		$this->oauth = FediBoost_OAuth::get_instance();
 
 		// Clean up any stored instance apps.
-		delete_option( 'auto_tooter_instance_apps' );
-		delete_option( 'auto_tooter_accounts' );
+		delete_option( 'fediboost_instance_apps' );
+		delete_option( 'fediboost_accounts' );
 	}
 
 	/**
 	 * Tear down test environment.
 	 */
 	public function tear_down() {
-		delete_option( 'auto_tooter_instance_apps' );
-		delete_option( 'auto_tooter_accounts' );
+		delete_option( 'fediboost_instance_apps' );
+		delete_option( 'fediboost_accounts' );
 		parent::tear_down();
 	}
 
@@ -54,7 +54,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'client_name', $request['body'] );
 		$this->assertArrayHasKey( 'redirect_uris', $request['body'] );
 		$this->assertArrayHasKey( 'scopes', $request['body'] );
-		$this->assertEquals( 'Auto Tooter for WordPress', $request['body']['client_name'] );
+		$this->assertEquals( 'FediBoost for WordPress', $request['body']['client_name'] );
 		$this->assertStringContainsString( 'read', $request['body']['scopes'] );
 		$this->assertStringContainsString( 'write:statuses', $request['body']['scopes'] );
 	}
@@ -108,7 +108,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 
 		$this->assertTrue( $result );
 
-		$accounts = get_option( 'auto_tooter_accounts', array() );
+		$accounts = get_option( 'fediboost_accounts', array() );
 		$this->assertCount( 1, $accounts );
 		$this->assertEquals( $instance_url, $accounts[0]['instance_url'] );
 		$this->assertEquals( $username, $accounts[0]['username'] );
@@ -118,7 +118,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 		$this->assertNotEquals( $access_token, $accounts[0]['encrypted_token'] );
 
 		// Verify the token can be decrypted back to original.
-		$encryption = Auto_Tooter_Encryption::get_instance();
+		$encryption = FediBoost_Encryption::get_instance();
 		$decrypted  = $encryption->decrypt( $accounts[0]['encrypted_token'] );
 		$this->assertEquals( $access_token, $decrypted );
 	}
@@ -137,14 +137,14 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 				'connected_at'    => time(),
 			),
 		);
-		update_option( 'auto_tooter_accounts', $accounts );
+		update_option( 'fediboost_accounts', $accounts );
 
 		// Mark the account as disconnected.
 		$result = $this->oauth->mark_account_disconnected( 0 );
 
 		$this->assertTrue( $result );
 
-		$accounts = get_option( 'auto_tooter_accounts', array() );
+		$accounts = get_option( 'fediboost_accounts', array() );
 		$this->assertEquals( 'disconnected', $accounts[0]['status'] );
 	}
 
@@ -163,7 +163,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 		$apps              = array();
 		$hostname          = wp_parse_url( $instance_url, PHP_URL_HOST );
 		$apps[ $hostname ] = $credentials;
-		update_option( 'auto_tooter_instance_apps', $apps );
+		update_option( 'fediboost_instance_apps', $apps );
 
 		// Verify we can retrieve cached credentials.
 		$cached = $this->oauth->get_cached_app_credentials( $instance_url );

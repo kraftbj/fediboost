@@ -6,6 +6,7 @@
 
 # AI/IDE directories
 .claude/
+.idea/
 
 # Project management
 agent-os/
@@ -18,6 +19,7 @@ WP-AUDIT.md
 # Testing
 tests/
 phpunit.xml
+phpcs.xml
 
 # Build tools
 composer.json

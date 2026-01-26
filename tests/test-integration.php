@@ -1,10 +1,10 @@
 <?php
 /**
- * Integration Tests for Auto Tooter.
+ * Integration Tests for FediBoost.
  *
  * Tests for end-to-end workflows, integration points, and edge cases.
  *
- * @package Auto_Tooter
+ * @package kraftbj/fediboost
  */
 
 /**
@@ -21,18 +21,18 @@ class Test_Integration extends WP_UnitTestCase {
 		parent::set_up();
 
 		// Clear accounts and scheduled events before each test.
-		update_option( 'auto_tooter_accounts', array() );
-		update_option( 'auto_tooter_instance_apps', array() );
-		wp_clear_scheduled_hook( 'auto_tooter_boost_post' );
+		update_option( 'fediboost_accounts', array() );
+		update_option( 'fediboost_instance_apps', array() );
+		wp_clear_scheduled_hook( 'fediboost_boost_post' );
 	}
 
 	/**
 	 * Tear down test environment.
 	 */
 	public function tear_down() {
-		update_option( 'auto_tooter_accounts', array() );
-		update_option( 'auto_tooter_instance_apps', array() );
-		wp_clear_scheduled_hook( 'auto_tooter_boost_post' );
+		update_option( 'fediboost_accounts', array() );
+		update_option( 'fediboost_instance_apps', array() );
+		wp_clear_scheduled_hook( 'fediboost_boost_post' );
 		parent::tear_down();
 	}
 
@@ -43,9 +43,9 @@ class Test_Integration extends WP_UnitTestCase {
 	 * stored, and can be decrypted back to the original value.
 	 */
 	public function test_token_encryption_integrates_with_account_storage() {
-		$oauth           = Auto_Tooter_OAuth::get_instance();
-		$encryption      = Auto_Tooter_Encryption::get_instance();
-		$accounts_helper = Auto_Tooter_Accounts::get_instance();
+		$oauth           = FediBoost_OAuth::get_instance();
+		$encryption      = FediBoost_Encryption::get_instance();
+		$accounts_helper = FediBoost_Accounts::get_instance();
 
 		$instance_url = 'https://mastodon.social';
 		$username     = 'testuser';
@@ -74,8 +74,8 @@ class Test_Integration extends WP_UnitTestCase {
 	 * correctly and only connected accounts are returned for boost operations.
 	 */
 	public function test_multiple_accounts_storage_and_retrieval() {
-		$accounts_helper = Auto_Tooter_Accounts::get_instance();
-		$encryption      = Auto_Tooter_Encryption::get_instance();
+		$accounts_helper = FediBoost_Accounts::get_instance();
+		$encryption      = FediBoost_Encryption::get_instance();
 
 		// Add three accounts from different instances.
 		$token1 = $encryption->encrypt( 'token_mastodon' );
@@ -90,7 +90,7 @@ class Test_Integration extends WP_UnitTestCase {
 		$this->assertEquals( 3, $accounts_helper->get_account_count() );
 
 		// Mark one as disconnected.
-		$accounts_helper->update_account_status( 1, Auto_Tooter_Accounts::STATUS_DISCONNECTED );
+		$accounts_helper->update_account_status( 1, FediBoost_Accounts::STATUS_DISCONNECTED );
 
 		// Only two should be connected.
 		$connected = $accounts_helper->get_connected_accounts();
@@ -109,7 +109,7 @@ class Test_Integration extends WP_UnitTestCase {
 	 * a scheduled post transitioning to publish status.
 	 */
 	public function test_scheduled_post_triggers_boost_on_publish() {
-		$boost = Auto_Tooter_Boost::get_instance();
+		$boost = FediBoost_Boost::get_instance();
 
 		// Create a post that simulates a scheduled post becoming published.
 		// The key is that post_before was 'future' and post is now 'publish'.
@@ -125,7 +125,7 @@ class Test_Integration extends WP_UnitTestCase {
 		$this->assertTrue( $scheduled );
 
 		// Verify the cron event was scheduled.
-		$next_scheduled = wp_next_scheduled( 'auto_tooter_boost_post', array( $post_id ) );
+		$next_scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
 		$this->assertNotFalse( $next_scheduled );
 	}
 
@@ -137,7 +137,7 @@ class Test_Integration extends WP_UnitTestCase {
 	 * mark the account as disconnected.
 	 */
 	public function test_invalid_encrypted_data_returns_false() {
-		$encryption = Auto_Tooter_Encryption::get_instance();
+		$encryption = FediBoost_Encryption::get_instance();
 
 		// Simulate corrupted/invalid encrypted data.
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
@@ -156,7 +156,7 @@ class Test_Integration extends WP_UnitTestCase {
 	 * and no boost should be attempted.
 	 */
 	public function test_activitypub_unavailable_blocks_boost_eligibility() {
-		$activitypub = Auto_Tooter_ActivityPub::get_instance();
+		$activitypub = FediBoost_ActivityPub::get_instance();
 
 		$post_id = self::factory()->post->create(
 			array(
@@ -181,7 +181,7 @@ class Test_Integration extends WP_UnitTestCase {
 	 * Verifies that capability checks work correctly for the admin page.
 	 */
 	public function test_unauthorized_user_cannot_access_settings() {
-		$security = Auto_Tooter_Security::get_instance();
+		$security = FediBoost_Security::get_instance();
 
 		// Create a subscriber user.
 		$subscriber = self::factory()->user->create( array( 'role' => 'subscriber' ) );
@@ -211,7 +211,7 @@ class Test_Integration extends WP_UnitTestCase {
 	 * for both connect and disconnect actions.
 	 */
 	public function test_invalid_nonce_rejects_submission() {
-		$security = Auto_Tooter_Security::get_instance();
+		$security = FediBoost_Security::get_instance();
 
 		// Test connect nonce.
 		$invalid_connect_nonce = 'completely_invalid_nonce_value';
@@ -222,10 +222,10 @@ class Test_Integration extends WP_UnitTestCase {
 		$this->assertFalse( $security->verify_disconnect_nonce( $invalid_disconnect_nonce, 0 ) );
 
 		// Test that valid nonces are accepted.
-		$valid_connect_nonce = wp_create_nonce( 'auto_tooter_connect' );
+		$valid_connect_nonce = wp_create_nonce( 'fediboost_connect' );
 		$this->assertTrue( $security->verify_connect_nonce( $valid_connect_nonce ) );
 
-		$valid_disconnect_nonce = wp_create_nonce( 'auto_tooter_disconnect_0' );
+		$valid_disconnect_nonce = wp_create_nonce( 'fediboost_disconnect_0' );
 		$this->assertTrue( $security->verify_disconnect_nonce( $valid_disconnect_nonce, 0 ) );
 	}
 
@@ -236,7 +236,7 @@ class Test_Integration extends WP_UnitTestCase {
 	 * should fail gracefully without crashing.
 	 */
 	public function test_boost_execution_handles_deleted_post() {
-		$boost = Auto_Tooter_Boost::get_instance();
+		$boost = FediBoost_Boost::get_instance();
 
 		// Create and then delete a post.
 		$post_id = self::factory()->post->create(
@@ -263,8 +263,8 @@ class Test_Integration extends WP_UnitTestCase {
 	 * and processes only connected ones.
 	 */
 	public function test_boost_skips_disconnected_accounts_and_continues() {
-		$accounts_helper = Auto_Tooter_Accounts::get_instance();
-		$encryption      = Auto_Tooter_Encryption::get_instance();
+		$accounts_helper = FediBoost_Accounts::get_instance();
+		$encryption      = FediBoost_Encryption::get_instance();
 
 		// Add two accounts.
 		$token1 = $encryption->encrypt( 'token1' );
@@ -274,7 +274,7 @@ class Test_Integration extends WP_UnitTestCase {
 		$accounts_helper->add_account( 'https://fosstodon.org', 'user2', $token2 );
 
 		// Disconnect the first account.
-		$accounts_helper->update_account_status( 0, Auto_Tooter_Accounts::STATUS_DISCONNECTED );
+		$accounts_helper->update_account_status( 0, FediBoost_Accounts::STATUS_DISCONNECTED );
 
 		// Verify get_connected_accounts only returns the second account.
 		$connected = $accounts_helper->get_connected_accounts();
