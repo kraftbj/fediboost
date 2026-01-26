@@ -13,9 +13,7 @@ CLAUDE.md
 agent-os/
 
 # Documentation (not for distribution)
-CODE_REVIEW.md
-SECURITY-AUDIT.md
-WP-AUDIT.md
+TODO.md
 
 # Testing
 tests/
