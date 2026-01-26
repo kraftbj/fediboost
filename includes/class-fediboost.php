@@ -40,7 +40,7 @@ class Plugin {
 	/**
 	 * Constructor.
 	 */
-	private function __construct() {
+	protected function __construct() {
 		// Core plugin class - hooks are initialized by individual component classes.
 	}
 

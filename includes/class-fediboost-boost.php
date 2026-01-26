@@ -56,7 +56,7 @@ class Boost {
 	/**
 	 * Constructor.
 	 */
-	private function __construct() {
+	protected function __construct() {
 		$this->init_hooks();
 	}
 

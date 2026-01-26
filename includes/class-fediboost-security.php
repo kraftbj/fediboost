@@ -73,8 +73,8 @@ class Security {
 	/**
 	 * Constructor.
 	 */
-	private function __construct() {
-		// Private constructor for singleton pattern.
+	protected function __construct() {
+		// Protected constructor for singleton pattern.
 	}
 
 	/**

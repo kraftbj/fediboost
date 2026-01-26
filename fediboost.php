@@ -54,6 +54,34 @@ define( 'FEDIBOOST_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // Include autoloader.
 require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
 
+/*
+ * Hook Registration Summary
+ *
+ * This plugin registers hooks in the following locations:
+ *
+ * Global (this file):
+ *   register_activation_hook  → fediboost_activate()
+ *   register_deactivation_hook → fediboost_deactivate()
+ *   admin_init                → fediboost_check_activitypub_dependency()
+ *   admin_notices             → fediboost_activitypub_missing_notice()
+ *   admin_notices             → fediboost_openssl_missing_notice() [conditional]
+ *   plugins_loaded            → fediboost_init()
+ *
+ * FediBoost\Boost::init_hooks():
+ *   wp_after_insert_post (priority 50) → on_post_publish()
+ *   fediboost_boost_post (cron)        → execute_boost()
+ *
+ * FediBoost\Admin::init_hooks():
+ *   admin_menu             → register_admin_menu()
+ *   admin_init             → register_settings()
+ *   admin_enqueue_scripts  → enqueue_admin_styles()
+ *   admin_notices          → display_admin_notices()
+ *   admin_notices          → display_reconnection_warning()
+ *   admin_post_fediboost_connect        → handle_connect_request()
+ *   admin_post_fediboost_oauth_callback → handle_oauth_callback()
+ *   admin_init                          → handle_disconnect_action()
+ */
+
 // Register activation hook.
 register_activation_hook( __FILE__, 'fediboost_activate' );
 
