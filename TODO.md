@@ -1,8 +1,8 @@
 # FediBoost TODO
 
-Remaining items from security, code review, and WordPress audits (January 2026). All are low severity and not required before initial release.
+Remaining items from audits (January 2026). All are low severity and not required before initial release.
 
-## Security
+## Code
 
 ### Open redirect via OAuth flow
 **File:** `admin/class-admin.php`
