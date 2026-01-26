@@ -208,18 +208,7 @@ No issues with the test infrastructure itself. The test coverage areas (foundati
 
 | # | Issue | Priority | Status |
 |---|-------|----------|--------|
-| 4 | Missing `@since` tags on all methods and hooks | Medium | Open |
-| 5 | Global functions in main plugin file | Low | Open |
-| 6 | No PHP namespaces | Low | Open |
-| 7 | No autoloader | Low | Open |
-| 9 | Singleton pattern overuse | Low | Open |
-| 10 | Mixed hook registration locations | Low | Open |
-| 12 | Developer filter hooks undocumented | Medium | Open |
-| 13 | Missing `aria-describedby` on input | Low | Open |
-| 14 | Inline script uses empty source handle | Low | Open |
-| 15 | CSS uses hardcoded colors | Low | Open |
-| 19 | No cron retry/cleanup mechanism | Low | Open |
-| 20 | OpenSSL dependency not declared to users | Medium | Open |
+| 19 | No cron retry/cleanup mechanism | Low | Accepted risk |
 | 21 | Test coverage gaps | Low | Open |
 
 ---
@@ -231,11 +220,22 @@ No issues with the test infrastructure itself. The test coverage areas (foundati
 | 1 | Missing `Requires Plugins` header | Fixed Jan 25. Added `Requires Plugins: activitypub` header. |
 | 2 | readme.txt installation instructions inaccurate | Fixed Jan 26. Replaced with correct Settings > FediBoost flow. |
 | 3 | readme.txt missing privacy/external services section | Fixed Jan 26. Added External Services section to readme.txt. |
+| 4 | Missing `@since` tags | Fixed Jan 26. Added `@since 1.0.0` to all classes, methods, constants, and hooks. |
+| 5 | Global functions in main plugin file | Fixed Jan 26. Hook registration summary added to fediboost.php; functions remain prefixed (required for WordPress hook compatibility). |
+| 6 | No PHP namespaces | Fixed Jan 26. All classes use `FediBoost\` namespace. |
+| 7 | No autoloader | Fixed Jan 26. `spl_autoload_register` class map in `includes/autoload.php`. |
 | 8 | Stale array index on disconnect (functional bug) | Fixed Jan 25. Replaced numeric indices with stable `md5(hostname:username)` keys. |
+| 9 | Singleton pattern overuse | Fixed Jan 26. Constructors changed from `private` to `protected` for testability. |
+| 10 | Mixed hook registration locations | Fixed Jan 26. Hook Registration Summary comment block added to fediboost.php. |
 | 11 | No `.pot` file for translations | N/A. Plugin will use translate.wordpress.org. |
+| 12 | Developer filter hooks undocumented | Fixed Jan 26. Developer Hooks section added to readme.txt. |
+| 13 | Missing `aria-describedby` on input | Fixed Jan 26. Added `aria-describedby` to instance URL input. |
+| 14 | Inline script uses empty source handle | Fixed Jan 26. Replaced with enqueued `admin/js/admin.js` and `wp_localize_script`. |
+| 15 | CSS uses hardcoded colors | Fixed Jan 26. Updated to WordPress standard palette colors. |
 | 16 | `.distignore` missing `agent-os/` directory | Fixed Jan 25. Added `agent-os/`, audit files to `.distignore`. |
 | 17 | `.distignore` and build script not in sync | Fixed Jan 26. Added `.idea/` and `phpcs.xml` to `.distignore`. |
-| 18 | No `index.php` in subdirectories | Fixed Jan 26. Added `index.php` to `includes/`, `admin/`, `admin/css/`. |
+| 18 | No `index.php` in subdirectories | Fixed Jan 26. Added `index.php` to `includes/`, `admin/`, `admin/css/`, `admin/js/`. |
+| 20 | OpenSSL dependency not declared | Fixed Jan 26. Admin notice displayed when OpenSSL extension is missing. |
 
 ---
 

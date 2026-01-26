@@ -50,12 +50,13 @@ The `is_external_url()` method uses `gethostbyname()` which only resolves to IPv
 
 ---
 
-### ISSUE 3: DNS Rebinding / TOCTOU in SSRF Check
+### ISSUE 3: DNS Rebinding / TOCTOU in SSRF Check — RESOLVED
 
 **Severity:** Medium
 **Effort to fix:** Medium (2-4 hours)
 **Must fix before publish:** Recommended
-**File:** `includes/class-fediboost-security.php:253-284`, `includes/class-fediboost-oauth.php`
+**Status:** Resolved — `is_external_url()` now stores the validated IP in `$pinned_ip`. All HTTP requests use `make_pinned_request()` which replaces the hostname with the pinned IP and sets the `Host` header, closing the TOCTOU window.
+**File:** `includes/class-security.php`, `includes/class-oauth.php`
 
 The `is_external_url()` resolves the hostname to validate it, but the subsequent `wp_remote_post()`/`wp_remote_get()` calls resolve the hostname independently. This creates a Time-of-Check Time-of-Use (TOCTOU) gap. An attacker controlling a DNS server could:
 
@@ -69,12 +70,13 @@ This is a DNS rebinding attack that can bypass SSRF protections. Mastodon instan
 
 ---
 
-### ISSUE 4: Client Secrets Stored Unencrypted
+### ISSUE 4: Client Secrets Stored Unencrypted — RESOLVED
 
 **Severity:** Medium
 **Effort to fix:** Low (1-2 hours)
 **Must fix before publish:** Recommended
-**File:** `includes/class-fediboost-oauth.php:465-472`
+**Status:** Resolved — `cache_app_credentials()` encrypts `client_secret` before storage; `get_cached_app_credentials()` decrypts on read. Decryption failure treated as cache miss.
+**File:** `includes/class-oauth.php`
 
 OAuth `client_id` and `client_secret` values are stored in the `fediboost_instance_apps` option as plaintext. While access tokens are encrypted, client secrets are sensitive credentials. An attacker with database read access (e.g., via SQL injection in another plugin, or a database backup leak) could obtain these credentials.
 
@@ -106,12 +108,13 @@ Similarly, the search request URL at `build_search_request()` uses `http_build_q
 
 ---
 
-### ISSUE 6: No OAuth Token Revocation on Disconnect
+### ISSUE 6: No OAuth Token Revocation on Disconnect — RESOLVED
 
 **Severity:** Medium-Low
 **Effort to fix:** Low (1-2 hours)
 **Must fix before publish:** Recommended
-**File:** `admin/class-fediboost-admin.php:470-493`
+**Status:** Resolved — `handle_disconnect_action()` now calls `revoke_account_token()` before removing the account. Revocation is best-effort; failures are logged but do not block the disconnect.
+**File:** `admin/class-admin.php`
 
 When an account is disconnected, the plugin removes the account data from the database but does not revoke the OAuth token on the Mastodon instance (via `POST /oauth/revoke`). The token remains valid on the remote instance until it expires or is manually revoked by the user.
 
@@ -121,12 +124,13 @@ When an account is disconnected, the plugin removes the account data from the da
 
 ---
 
-### ISSUE 7: `sanitize_accounts` Callback Is a Passthrough
+### ISSUE 7: `sanitize_accounts` Callback Is a Passthrough — RESOLVED
 
 **Severity:** Medium-Low
 **Effort to fix:** Low (1 hour)
 **Must fix before publish:** Recommended
-**File:** `admin/class-fediboost-admin.php:115-120`
+**Status:** Resolved — `sanitize_accounts()` now validates each account entry against the schema (required keys, types, status enum). Non-conforming entries are dropped. Valid entries are sanitized with `esc_url_raw()` and `sanitize_text_field()`.
+**File:** `admin/class-admin.php`
 
 The Settings API `sanitize_callback` for `fediboost_accounts` only checks if the value is an array:
 
@@ -197,12 +201,13 @@ This is a common pattern in WordPress plugins and not inherently wrong, but the 
 
 ---
 
-### ISSUE 11: No Limit on Connected Accounts
+### ISSUE 11: No Limit on Connected Accounts — RESOLVED
 
 **Severity:** Low
 **Effort to fix:** Low (30 minutes)
 **Must fix before publish:** No
-**File:** `includes/class-fediboost-accounts.php`, `admin/class-fediboost-admin.php`
+**Status:** Resolved — `add_account()` enforces a maximum of 10 accounts (filterable via `fediboost_max_accounts`). Returns `WP_Error` when limit is reached.
+**File:** `includes/class-accounts.php`
 
 There is no maximum limit on the number of Mastodon accounts that can be connected. Each connected account adds processing overhead on every post publish (search + reblog API calls per account). A compromised admin or misconfigured system could connect many accounts, causing performance degradation or rate limiting from Mastodon instances.
 
@@ -240,11 +245,12 @@ The default `manage_options` restricts to Administrators, which is correct.
 
 ---
 
-### ISSUE 14: Uninstall Does Not Revoke Remote Tokens
+### ISSUE 14: Uninstall Does Not Revoke Remote Tokens — RESOLVED
 
 **Severity:** Low
 **Effort to fix:** Medium (2 hours)
 **Must fix before publish:** No (nice-to-have)
+**Status:** Resolved — `uninstall.php` now loads the autoloader, iterates all accounts, decrypts tokens, and attempts best-effort revocation via `revoke_token()` before deleting options.
 **File:** `uninstall.php`
 
 The uninstall routine deletes all local data (options, transients) but does not revoke OAuth tokens on connected Mastodon instances. After uninstalling the plugin, the registered OAuth app and issued tokens remain valid on each Mastodon instance.
@@ -259,18 +265,18 @@ The uninstall routine deletes all local data (options, transients) but does not 
 |---|-------|----------|------------|-----------|
 | 1 | ~~Encryption lacks HMAC authentication~~ | High | Low | Resolved |
 | 2 | ~~SSRF protection does not cover IPv6~~ | High | Low | Resolved |
-| 3 | DNS rebinding / TOCTOU in SSRF check | Medium | Medium | Recommended |
-| 4 | Client secrets stored unencrypted | Medium | Low | Recommended |
+| 3 | ~~DNS rebinding / TOCTOU in SSRF check~~ | Medium | Medium | Resolved |
+| 4 | ~~Client secrets stored unencrypted~~ | Medium | Low | Resolved |
 | 5 | ~~Unsanitized status_id in URL path~~ | Medium | Low | Resolved |
-| 6 | No token revocation on disconnect | Medium-Low | Low | Recommended |
-| 7 | sanitize_accounts is a passthrough | Medium-Low | Low | Recommended |
+| 6 | ~~No token revocation on disconnect~~ | Medium-Low | Low | Resolved |
+| 7 | ~~sanitize_accounts is a passthrough~~ | Medium-Low | Low | Resolved |
 | 8 | Open redirect via OAuth flow | Low | Low | No |
 | 9 | Debug logging may expose sensitive data | Low | Low | No |
 | 10 | Encryption key tied to auth salts | Low | Medium | No |
-| 11 | No limit on connected accounts | Low | Low | No |
+| 11 | ~~No limit on connected accounts~~ | Low | Low | Resolved |
 | 12 | Race condition in account operations | Low | Medium | No |
 | 13 | Capability filter could weaken access | Low | N/A | No |
-| 14 | Uninstall does not revoke remote tokens | Low | Medium | No |
+| 14 | ~~Uninstall does not revoke remote tokens~~ | Low | Medium | Resolved |
 
 ---
 
