@@ -66,6 +66,18 @@ class FediBoost_Accounts {
 	}
 
 	/**
+	 * Generate a stable key for an account based on instance hostname and username.
+	 *
+	 * @param string $instance_url The Mastodon instance URL.
+	 * @param string $username     The account username.
+	 * @return string A 32-character hex key.
+	 */
+	public static function generate_account_key( $instance_url, $username ) {
+		$hostname = wp_parse_url( $instance_url, PHP_URL_HOST );
+		return md5( $hostname . ':' . $username );
+	}
+
+	/**
 	 * Get the account data schema.
 	 *
 	 * @return array Array describing the account data schema.
@@ -148,6 +160,44 @@ class FediBoost_Accounts {
 	}
 
 	/**
+	 * Get a single account by its stable key.
+	 *
+	 * @param string $key The account key from generate_account_key().
+	 * @return array|false Account data or false if not found.
+	 */
+	public function get_account_by_key( $key ) {
+		$accounts = $this->get_all_accounts();
+
+		foreach ( $accounts as $account ) {
+			$account_key = self::generate_account_key( $account['instance_url'], $account['username'] );
+			if ( $account_key === $key ) {
+				return $account;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Find the current numeric index for an account by its stable key.
+	 *
+	 * @param string $key The account key from generate_account_key().
+	 * @return int|false The numeric index or false if not found.
+	 */
+	private function find_account_index_by_key( $key ) {
+		$accounts = $this->get_all_accounts();
+
+		foreach ( $accounts as $index => $account ) {
+			$account_key = self::generate_account_key( $account['instance_url'], $account['username'] );
+			if ( $account_key === $key ) {
+				return $index;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Get the count of connected accounts.
 	 *
 	 * @return int Number of connected accounts.
@@ -168,14 +218,15 @@ class FediBoost_Accounts {
 	/**
 	 * Update account status.
 	 *
-	 * @param int    $index  The account index.
+	 * @param string $key    The stable account key from generate_account_key().
 	 * @param string $status The new status (connected or disconnected).
 	 * @return bool True on success, false on failure.
 	 */
-	public function update_account_status( $index, $status ) {
+	public function update_account_status( $key, $status ) {
 		$accounts = $this->get_all_accounts();
+		$index    = $this->find_account_index_by_key( $key );
 
-		if ( ! isset( $accounts[ $index ] ) ) {
+		if ( false === $index ) {
 			return false;
 		}
 
@@ -189,15 +240,16 @@ class FediBoost_Accounts {
 	}
 
 	/**
-	 * Remove an account by index.
+	 * Remove an account by its stable key.
 	 *
-	 * @param int $index The account index.
+	 * @param string $key The stable account key from generate_account_key().
 	 * @return bool True on success, false on failure.
 	 */
-	public function remove_account( $index ) {
+	public function remove_account( $key ) {
 		$accounts = $this->get_all_accounts();
+		$index    = $this->find_account_index_by_key( $key );
 
-		if ( ! isset( $accounts[ $index ] ) ) {
+		if ( false === $index ) {
 			return false;
 		}
 
@@ -273,10 +325,10 @@ class FediBoost_Accounts {
 		$accounts     = $this->get_all_accounts();
 		$disconnected = array();
 
-		foreach ( $accounts as $index => $account ) {
+		foreach ( $accounts as $account ) {
 			if ( isset( $account['status'] ) && self::STATUS_DISCONNECTED === $account['status'] ) {
-				$account['index'] = $index;
-				$disconnected[]   = $account;
+				$account['key'] = self::generate_account_key( $account['instance_url'], $account['username'] );
+				$disconnected[] = $account;
 			}
 		}
 

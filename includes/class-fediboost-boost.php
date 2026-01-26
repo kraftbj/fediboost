@@ -195,7 +195,9 @@ class FediBoost_Boost {
 		$encryption = FediBoost_Encryption::get_instance();
 
 		// Process each account.
-		foreach ( $accounts as $index => $account ) {
+		foreach ( $accounts as $account ) {
+			$account_key = FediBoost_Accounts::generate_account_key( $account['instance_url'], $account['username'] );
+
 			// Skip disconnected accounts.
 			if ( FediBoost_Accounts::STATUS_CONNECTED !== $account['status'] ) {
 				$this->log_info(
@@ -219,7 +221,7 @@ class FediBoost_Boost {
 						'username' => $account['username'],
 					)
 				);
-				$this->handle_boost_error( $index, 401, $account['instance_url'] );
+				$this->handle_boost_error( $account_key, 401, $account['instance_url'] );
 				continue;
 			}
 
@@ -254,7 +256,7 @@ class FediBoost_Boost {
 					)
 				);
 
-				$this->handle_boost_error( $index, $status_code, $account['instance_url'] );
+				$this->handle_boost_error( $account_key, $status_code, $account['instance_url'] );
 				continue;
 			}
 
@@ -405,15 +407,15 @@ class FediBoost_Boost {
 	/**
 	 * Handle boost errors and update account status if needed.
 	 *
-	 * @param int    $account_index The account index in the accounts array.
-	 * @param int    $status_code   The HTTP status code.
-	 * @param string $instance_url  The instance URL for logging.
+	 * @param string $account_key  The stable account key.
+	 * @param int    $status_code  The HTTP status code.
+	 * @param string $instance_url The instance URL for logging.
 	 */
-	public function handle_boost_error( $account_index, $status_code, $instance_url ) {
+	public function handle_boost_error( $account_key, $status_code, $instance_url ) {
 		// On 401/403 (auth failure), mark account as disconnected.
 		if ( 401 === $status_code || 403 === $status_code ) {
 			$accounts = FediBoost_Accounts::get_instance();
-			$accounts->update_account_status( $account_index, FediBoost_Accounts::STATUS_DISCONNECTED );
+			$accounts->update_account_status( $account_key, FediBoost_Accounts::STATUS_DISCONNECTED );
 
 			$this->log_error(
 				'Account marked as disconnected due to auth failure',

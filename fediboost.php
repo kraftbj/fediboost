@@ -6,6 +6,7 @@
  * Version: 1.0.0
  * Requires at least: 6.9
  * Requires PHP: 7.4
+ * Requires Plugins: activitypub
  * Author: Brandon Kraft
  * Author URI: https://kraft.blog/
  * License: GPL v2 or later

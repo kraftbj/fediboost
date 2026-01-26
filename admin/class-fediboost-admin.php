@@ -444,11 +444,11 @@ class FediBoost_Admin {
 
 		$security = FediBoost_Security::get_instance();
 
-		// Get account index - nonce verified below.
+		// Get account key - nonce verified below.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$account_index = isset( $_GET['account'] ) ? intval( $_GET['account'] ) : -1;
+		$account_key = isset( $_GET['account'] ) ? sanitize_key( wp_unslash( $_GET['account'] ) ) : '';
 
-		if ( $account_index < 0 ) {
+		if ( empty( $account_key ) ) {
 			$this->redirect_with_error( 'invalid_nonce' );
 			return;
 		}
@@ -457,7 +457,7 @@ class FediBoost_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$nonce = isset( $_GET['_wpnonce'] ) ? wp_unslash( $_GET['_wpnonce'] ) : '';
 
-		if ( ! $security->verify_disconnect_nonce( $nonce, $account_index ) ) {
+		if ( ! $security->verify_disconnect_nonce( $nonce, $account_key ) ) {
 			$this->redirect_with_error( 'invalid_nonce' );
 			return;
 		}
@@ -470,7 +470,7 @@ class FediBoost_Admin {
 
 		// Get account data before removal for cache clearing.
 		$accounts_helper = FediBoost_Accounts::get_instance();
-		$account         = $accounts_helper->get_account_by_index( $account_index );
+		$account         = $accounts_helper->get_account_by_key( $account_key );
 
 		if ( $account ) {
 			// Clear cached data for the account.
@@ -478,7 +478,7 @@ class FediBoost_Admin {
 		}
 
 		// Remove the account.
-		$accounts_helper->remove_account( $account_index );
+		$accounts_helper->remove_account( $account_key );
 
 		// Redirect with success notice.
 		$redirect_url = add_query_arg(
@@ -610,7 +610,8 @@ class FediBoost_Admin {
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $accounts as $index => $account ) : ?>
+				<?php foreach ( $accounts as $account ) : ?>
+					<?php $account_key = FediBoost_Accounts::generate_account_key( $account['instance_url'], $account['username'] ); ?>
 					<tr>
 						<td>
 							<a href="<?php echo esc_url( $account['instance_url'] ); ?>" target="_blank" rel="noopener noreferrer">
@@ -638,11 +639,11 @@ class FediBoost_Admin {
 									array(
 										'page'    => 'fediboost',
 										'action'  => 'disconnect',
-										'account' => $index,
+										'account' => $account_key,
 									),
 									admin_url( 'options-general.php' )
 								),
-								'fediboost_disconnect_' . $index
+								'fediboost_disconnect_' . $account_key
 							);
 							?>
 							<a href="<?php echo esc_url( $disconnect_url ); ?>" class="button button-secondary" onclick="return fediboostConfirmDisconnect();" aria-label="<?php esc_attr_e( 'Disconnect this Mastodon account', 'fediboost' ); ?>">

@@ -133,22 +133,22 @@ class FediBoost_Security {
 	/**
 	 * Get nonce action for disconnect.
 	 *
-	 * @param int $account_index The account index.
+	 * @param string $account_key The stable account key.
 	 * @return string The nonce action.
 	 */
-	public function get_disconnect_nonce_action( $account_index ) {
-		return self::NONCE_ACTION_DISCONNECT_PREFIX . intval( $account_index );
+	public function get_disconnect_nonce_action( $account_key ) {
+		return self::NONCE_ACTION_DISCONNECT_PREFIX . sanitize_key( $account_key );
 	}
 
 	/**
 	 * Verify nonce for disconnect action.
 	 *
-	 * @param string $nonce         The nonce value to verify.
-	 * @param int    $account_index The account index.
+	 * @param string $nonce       The nonce value to verify.
+	 * @param string $account_key The stable account key.
 	 * @return bool True if nonce is valid.
 	 */
-	public function verify_disconnect_nonce( $nonce, $account_index ) {
-		$action = $this->get_disconnect_nonce_action( $account_index );
+	public function verify_disconnect_nonce( $nonce, $account_key ) {
+		$action = $this->get_disconnect_nonce_action( $account_key );
 		return $this->verify_nonce( $nonce, $action );
 	}
 

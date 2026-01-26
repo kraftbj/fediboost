@@ -531,21 +531,12 @@ class FediBoost_OAuth {
 	/**
 	 * Mark an account as disconnected due to auth failure.
 	 *
-	 * @param int $account_index The account index in the accounts array.
+	 * @param string $account_key The stable account key from FediBoost_Accounts::generate_account_key().
 	 * @return bool True on success, false on failure.
 	 */
-	public function mark_account_disconnected( $account_index ) {
-		$accounts = get_option( 'fediboost_accounts', array() );
-
-		if ( ! isset( $accounts[ $account_index ] ) ) {
-			return false;
-		}
-
-		$accounts[ $account_index ]['status'] = 'disconnected';
-
-		update_option( 'fediboost_accounts', $accounts, false );
-
-		return true;
+	public function mark_account_disconnected( $account_key ) {
+		$accounts_helper = FediBoost_Accounts::get_instance();
+		return $accounts_helper->update_account_status( $account_key, FediBoost_Accounts::STATUS_DISCONNECTED );
 	}
 
 	/**
