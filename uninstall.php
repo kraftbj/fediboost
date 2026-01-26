@@ -20,33 +20,41 @@ if ( ! defined( 'FEDIBOOST_PLUGIN_DIR' ) ) {
 }
 require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
 
-$accounts   = get_option( 'fediboost_accounts', array() );
-$encryption = FediBoost\Encryption::get_instance();
-$oauth      = FediBoost\OAuth::get_instance();
+/**
+ * Revoke all stored OAuth tokens before deleting plugin data.
+ *
+ * @since 1.0.0
+ */
+function fediboost_revoke_all_tokens() {
+	$accounts   = get_option( 'fediboost_accounts', array() );
+	$encryption = FediBoost\Encryption::get_instance();
+	$oauth      = FediBoost\OAuth::get_instance();
 
-foreach ( $accounts as $account ) {
-	if ( empty( $account['encrypted_token'] ) || empty( $account['instance_url'] ) ) {
-		continue;
+	foreach ( $accounts as $account ) {
+		if ( empty( $account['encrypted_token'] ) || empty( $account['instance_url'] ) ) {
+			continue;
+		}
+
+		$token = $encryption->decrypt( $account['encrypted_token'] );
+		if ( false === $token ) {
+			continue;
+		}
+
+		$credentials = $oauth->get_cached_app_credentials( $account['instance_url'] );
+		if ( false === $credentials ) {
+			continue;
+		}
+
+		// Best-effort revocation; ignore failures.
+		$oauth->revoke_token(
+			$account['instance_url'],
+			$token,
+			$credentials['client_id'],
+			$credentials['client_secret']
+		);
 	}
-
-	$token = $encryption->decrypt( $account['encrypted_token'] );
-	if ( false === $token ) {
-		continue;
-	}
-
-	$credentials = $oauth->get_cached_app_credentials( $account['instance_url'] );
-	if ( false === $credentials ) {
-		continue;
-	}
-
-	// Best-effort revocation; ignore failures.
-	$oauth->revoke_token(
-		$account['instance_url'],
-		$token,
-		$credentials['client_id'],
-		$credentials['client_secret']
-	);
 }
+fediboost_revoke_all_tokens();
 
 // Delete plugin options.
 delete_option( 'fediboost_accounts' );
