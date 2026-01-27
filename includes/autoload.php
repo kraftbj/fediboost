@@ -29,6 +29,7 @@ spl_autoload_register(
 			'Accounts'    => 'includes/class-accounts.php',
 			'ActivityPub' => 'includes/class-activitypub.php',
 			'Boost'       => 'includes/class-boost.php',
+			'CLI'         => 'includes/class-cli.php',
 			'Admin'       => 'admin/class-admin.php',
 		);
 
