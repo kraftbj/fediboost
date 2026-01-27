@@ -84,6 +84,11 @@ require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
  *   admin_post_fediboost_connect        → handle_connect_request()
  *   admin_post_fediboost_oauth_callback → handle_oauth_callback()
  *   admin_init                          → handle_disconnect_action()
+ *
+ * FediBoost\CLI::register_commands() [when WP-CLI is available]:
+ *   wp fediboost accounts → accounts_command()
+ *   wp fediboost boost    → boost_command()
+ *   wp fediboost status   → status_command()
  */
 
 // Register activation hook.
@@ -235,6 +240,11 @@ function fediboost_init() {
 	// Initialize admin class if in admin.
 	if ( is_admin() ) {
 		FediBoost\Admin::get_instance();
+	}
+
+	// Initialize CLI commands if WP-CLI is available.
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		FediBoost\CLI::get_instance();
 	}
 }
 add_action( 'plugins_loaded', 'fediboost_init' );
