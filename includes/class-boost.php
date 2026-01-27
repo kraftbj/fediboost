@@ -191,8 +191,8 @@ class Boost {
 	 * @param int $post_id The post ID to boost.
 	 */
 	public function execute_boost( $post_id ) {
-		// Verify this is a legitimate cron or admin context.
-		if ( ! defined( 'DOING_CRON' ) && ! is_admin() ) {
+		// Verify this is a legitimate cron, admin, or WP-CLI context.
+		if ( ! defined( 'DOING_CRON' ) && ! is_admin() && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 			return;
 		}
 

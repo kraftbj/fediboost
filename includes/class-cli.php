@@ -68,7 +68,7 @@ class CLI {
 	}
 
 	/**
-	 * List connected Mastodon accounts.
+	 * List Mastodon accounts.
 	 *
 	 * ## OPTIONS
 	 *
@@ -85,7 +85,7 @@ class CLI {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # List all connected accounts
+	 *     # List all accounts
 	 *     $ wp fediboost accounts
 	 *
 	 *     # Output as JSON
@@ -101,7 +101,7 @@ class CLI {
 		$accounts        = $accounts_helper->get_all_accounts();
 
 		if ( empty( $accounts ) ) {
-			\WP_CLI::warning( 'No connected Mastodon accounts found.' );
+			\WP_CLI::warning( 'No Mastodon accounts found.' );
 			return;
 		}
 
@@ -165,8 +165,9 @@ class CLI {
 		}
 
 		// Check connected accounts.
-		$accounts_helper = Accounts::get_instance();
-		if ( ! $accounts_helper->has_accounts() ) {
+		$accounts_helper    = Accounts::get_instance();
+		$connected_accounts = $accounts_helper->get_connected_accounts();
+		if ( empty( $connected_accounts ) ) {
 			\WP_CLI::error( 'No connected Mastodon accounts. Connect an account first.' );
 		}
 
@@ -180,15 +181,9 @@ class CLI {
 
 		// Execute the boost directly (bypass cron).
 		$boost = Boost::get_instance();
-
-		// Temporarily define DOING_CRON to allow execute_boost to run.
-		if ( ! defined( 'DOING_CRON' ) ) {
-			define( 'DOING_CRON', true );
-		}
-
 		$boost->execute_boost( $post_id );
 
-		\WP_CLI::success( sprintf( 'Boost executed for post %d.', $post_id ) );
+		\WP_CLI::success( sprintf( 'Boost triggered for post %d. Check logs or your Mastodon instance to confirm delivery.', $post_id ) );
 	}
 
 	/**
