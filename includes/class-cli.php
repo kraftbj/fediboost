@@ -239,26 +239,26 @@ class CLI {
 		);
 
 		// Check ActivityPub eligibility.
-		$activitypub             = ActivityPub::get_instance();
-		$status['ap_active']     = $activitypub->is_plugin_active() ? 'yes' : 'no';
-		$status['ap_eligible']   = $activitypub->is_post_eligible( $post ) ? 'yes' : 'no';
+		$activitypub               = ActivityPub::get_instance();
+		$status['ap_active']       = $activitypub->is_plugin_active() ? 'yes' : 'no';
+		$status['ap_eligible']     = $activitypub->is_post_eligible( $post ) ? 'yes' : 'no';
 		$status['activitypub_url'] = '';
 
 		if ( $activitypub->is_post_eligible( $post ) ) {
-			$ap_url = $activitypub->get_activitypub_url( $post );
+			$ap_url                    = $activitypub->get_activitypub_url( $post );
 			$status['activitypub_url'] = $ap_url ? $ap_url : 'unavailable';
 		}
 
 		// Check if boost is scheduled.
-		$scheduled_time       = wp_next_scheduled( Boost::CRON_HOOK, array( $post_id ) );
-		$status['scheduled']  = $scheduled_time ? 'yes' : 'no';
+		$scheduled_time         = wp_next_scheduled( Boost::CRON_HOOK, array( $post_id ) );
+		$status['scheduled']    = $scheduled_time ? 'yes' : 'no';
 		$status['scheduled_at'] = $scheduled_time ? gmdate( 'Y-m-d H:i:s', $scheduled_time ) : 'n/a';
 
 		// Check connected accounts.
-		$accounts_helper        = Accounts::get_instance();
-		$accounts               = $accounts_helper->get_all_accounts();
-		$connected_count        = count( $accounts_helper->get_connected_accounts() );
-		$status['accounts']     = count( $accounts );
+		$accounts_helper              = Accounts::get_instance();
+		$accounts                     = $accounts_helper->get_all_accounts();
+		$connected_count              = count( $accounts_helper->get_connected_accounts() );
+		$status['accounts']           = count( $accounts );
 		$status['accounts_connected'] = $connected_count;
 
 		if ( 'json' === $format || 'yaml' === $format ) {
