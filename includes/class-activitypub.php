@@ -148,7 +148,7 @@ class ActivityPub {
 	}
 
 	/**
-	 * Get the ActivityPub URL for a post using the transformer factory.
+	 * Get the ActivityPub URL for a post.
 	 *
 	 * @since 1.0.0
 	 *
@@ -170,55 +170,18 @@ class ActivityPub {
 			return false;
 		}
 
-		// Use the transformer factory to get the ActivityPub object.
-		if ( ! class_exists( '\Activitypub\Transformer\Factory' ) ) {
-			$this->log_error( 'ActivityPub Transformer Factory class not found' );
+		if ( ! function_exists( '\Activitypub\get_post_id' ) ) {
+			$this->log_error( 'ActivityPub get_post_id function not found' );
 			return false;
 		}
 
-		try {
-			$transformer = \Activitypub\Transformer\Factory::get_transformer( $post );
+		$url = \Activitypub\get_post_id( $post );
 
-			if ( ! $transformer || is_wp_error( $transformer ) ) {
-				$this->log_error(
-					'Failed to transform post',
-					array(
-						'post_id' => $post->ID,
-						'error'   => is_wp_error( $transformer ) ? $transformer->get_error_message() : 'Unknown error',
-					)
-				);
-				return false;
-			}
-
-			$activity_object = $transformer->to_object();
-
-			if ( ! $activity_object || is_wp_error( $activity_object ) ) {
-				$this->log_error(
-					'Failed to get ActivityPub object',
-					array(
-						'post_id' => $post->ID,
-					)
-				);
-				return false;
-			}
-
-			$url = $activity_object->get_id();
-
-			if ( empty( $url ) ) {
-				return false;
-			}
-
-			return $url;
-		} catch ( \Exception $e ) {
-			$this->log_error(
-				'Exception getting ActivityPub URL',
-				array(
-					'post_id' => $post->ID,
-					'message' => $e->getMessage(),
-				)
-			);
+		if ( empty( $url ) ) {
 			return false;
 		}
+
+		return $url;
 	}
 
 	/**
