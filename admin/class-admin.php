@@ -334,8 +334,8 @@ class Admin {
 		$security = Security::get_instance();
 
 		// Verify nonce and capability - nonce is verified via verify_connect_nonce() below.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$nonce = isset( $_POST['fediboost_nonce'] ) ? wp_unslash( $_POST['fediboost_nonce'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$nonce = isset( $_POST['fediboost_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['fediboost_nonce'] ) ) : '';
 
 		if ( ! $security->verify_connect_nonce( $nonce ) ) {
 			$this->redirect_with_error( 'invalid_nonce' );
@@ -535,8 +535,8 @@ class Admin {
 		}
 
 		// Verify nonce.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$nonce = isset( $_GET['_wpnonce'] ) ? wp_unslash( $_GET['_wpnonce'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
 
 		if ( ! $security->verify_disconnect_nonce( $nonce, $account_key ) ) {
 			$this->redirect_with_error( 'invalid_nonce' );
