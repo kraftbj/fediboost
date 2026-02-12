@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     name: Deploy to WordPress.org SVN
@@ -12,6 +15,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Build plugin
+        run: |
+          mkdir -p dist/fediboost
+          rsync -rc --exclude-from=".distignore" ./ dist/fediboost/ --delete --delete-excluded
+          cd dist && zip -r ../fediboost.zip fediboost
+
+      - name: Upload release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" fediboost.zip --clobber
 
       - name: Deploy to WordPress.org SVN
         env:
@@ -30,9 +44,8 @@ jobs:
           svn checkout "$SVN_URL" "$SVN_DIR" --depth immediates
           svn update --set-depth infinity "$SVN_DIR/trunk"
 
-          # Sync distribution files into trunk, respecting .distignore.
-          rsync -rc --exclude-from="$GITHUB_WORKSPACE/.distignore" \
-            "$GITHUB_WORKSPACE/" "$SVN_DIR/trunk/" --delete --delete-excluded
+          # Sync the already-built distribution files into trunk.
+          rsync -rc dist/fediboost/ "$SVN_DIR/trunk/" --delete --delete-excluded
 
           cd "$SVN_DIR"
 
