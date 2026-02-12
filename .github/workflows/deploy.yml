@@ -1,0 +1,73 @@
+name: Deploy to WordPress.org
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Deploy to WordPress.org SVN
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to WordPress.org SVN
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        run: |
+          # Parse version from the release tag (strip leading "v" if present).
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          SVN_URL="https://plugins.svn.wordpress.org/fediboost"
+          SVN_DIR="$RUNNER_TEMP/svn"
+
+          echo "Deploying version $VERSION to WordPress.org..."
+
+          # Shallow SVN checkout — trunk only, skip existing tags for speed.
+          svn checkout "$SVN_URL" "$SVN_DIR" --depth immediates
+          svn update --set-depth infinity "$SVN_DIR/trunk"
+
+          # Sync distribution files into trunk, respecting .distignore.
+          rsync -rc --exclude-from="$GITHUB_WORKSPACE/.distignore" \
+            "$GITHUB_WORKSPACE/" "$SVN_DIR/trunk/" --delete --delete-excluded
+
+          cd "$SVN_DIR"
+
+          # Stage new files.
+          svn add --force trunk/
+
+          # Stage deleted files (missing from working copy after rsync).
+          svn status trunk/ | grep '^!' | cut -c9- | while IFS= read -r file; do
+            svn delete --force "$file"
+          done
+
+          # Show staged changes.
+          echo "Changes to commit:"
+          svn status trunk/
+
+          # Commit trunk if there are staged changes.
+          if svn status trunk/ | grep -qE '^[ADMR]'; then
+            svn commit -m "Deploy version $VERSION to trunk" \
+              --username "$SVN_USERNAME" \
+              --password "$SVN_PASSWORD" \
+              --non-interactive --no-auth-cache
+            echo "Trunk updated to version $VERSION."
+          else
+            echo "No changes to deploy to trunk."
+          fi
+
+          # Create SVN tag for stable (non-pre-release) releases only.
+          if [ "${{ github.event.release.prerelease }}" != "true" ]; then
+            echo "Creating SVN tag $VERSION..."
+            svn copy "$SVN_URL/trunk" "$SVN_URL/tags/$VERSION" \
+              -m "Tag version $VERSION" \
+              --username "$SVN_USERNAME" \
+              --password "$SVN_PASSWORD" \
+              --non-interactive --no-auth-cache
+            echo "Tagged version $VERSION."
+          else
+            echo "Pre-release -- skipping SVN tag."
+          fi
