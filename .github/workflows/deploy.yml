@@ -48,10 +48,10 @@ jobs:
             echo "::error::Version mismatch detected. Aborting deploy."
             BODY="The deploy workflow for release **$GITHUB_REF_NAME** was aborted because of a version mismatch:
 
-$MISMATCH
-Update the version numbers and create a new release to retry.
+          $MISMATCH
+          Update the version numbers and create a new release to retry.
 
-[Failed run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
+          [Failed run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
             gh issue create \
               --title "Deploy failed: version mismatch for $GITHUB_REF_NAME" \
               --body "$BODY"
