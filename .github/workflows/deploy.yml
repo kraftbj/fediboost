@@ -22,7 +22,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="$GITHUB_REF_NAME"
 
           STABLE_TAG=$(grep -i "^Stable tag:" readme.txt | head -1 | sed 's/[Ss]table tag:[[:space:]]*//' | tr -d '[:space:]')
           PLUGIN_VERSION=$(grep -i "^ \* Version:" fediboost.php | head -1 | sed 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
