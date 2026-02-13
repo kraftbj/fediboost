@@ -1,5 +1,6 @@
 # Development files
 .wp-env.json
+.wordpress-org/
 .git/
 .github/
 .gitignore
