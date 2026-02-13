@@ -81,6 +81,8 @@ composer zip
 
 This cleans `dist/`, copies only distribution files into `dist/fediboost/`, and creates `fediboost.zip` in the project root. The `.distignore` file lists everything excluded from the distribution (tests, dev config, audit docs, build tools, etc.).
 
+Release tags use bare version numbers without a `v` prefix (e.g., `0.1.0`, not `v0.1.0`). The deploy workflow expects this format.
+
 ### Docblocks
 
 All classes, methods, constants, properties, and hook definitions have `@since 1.0.0` tags. Maintain this convention — new additions should use the appropriate version number.
