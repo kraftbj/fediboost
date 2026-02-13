@@ -18,18 +18,20 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Verify version for stable releases
-        if: '!github.event.release.prerelease'
+        if: ${{ !github.event.release.prerelease }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
 
-          STABLE_TAG=$(grep -i "^Stable tag:" readme.txt | head -1 | sed 's/[Ss]table tag:\s*//' | tr -d '[:space:]')
-          PLUGIN_VERSION=$(grep -i "^ \* Version:" fediboost.php | head -1 | sed 's/.*Version:\s*//' | tr -d '[:space:]')
+          STABLE_TAG=$(grep -i "^Stable tag:" readme.txt | head -1 | sed 's/[Ss]table tag:[[:space:]]*//' | tr -d '[:space:]')
+          PLUGIN_VERSION=$(grep -i "^ \* Version:" fediboost.php | head -1 | sed 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
+          CONSTANT_VERSION=$(grep "define( 'FEDIBOOST_VERSION'" fediboost.php | head -1 | sed "s/.*'FEDIBOOST_VERSION',[[:space:]]*'//" | sed "s/'.*//" | tr -d '[:space:]')
 
           echo "Release tag version: $VERSION"
           echo "readme.txt Stable tag: $STABLE_TAG"
           echo "Plugin header Version: $PLUGIN_VERSION"
+          echo "FEDIBOOST_VERSION constant: $CONSTANT_VERSION"
 
           MISMATCH=""
           if [ "$STABLE_TAG" != "$VERSION" ]; then
@@ -37,6 +39,9 @@ jobs:
           fi
           if [ "$PLUGIN_VERSION" != "$VERSION" ]; then
             MISMATCH="${MISMATCH}- **fediboost.php** Version header is \`$PLUGIN_VERSION\`, expected \`$VERSION\`"$'\n'
+          fi
+          if [ "$CONSTANT_VERSION" != "$VERSION" ]; then
+            MISMATCH="${MISMATCH}- **fediboost.php** FEDIBOOST_VERSION constant is \`$CONSTANT_VERSION\`, expected \`$VERSION\`"$'\n'
           fi
 
           if [ -n "$MISMATCH" ]; then
