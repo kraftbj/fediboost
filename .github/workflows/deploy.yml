@@ -1,0 +1,76 @@
+name: Deploy to WordPress.org
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  deploy:
+    name: Deploy to WordPress.org SVN
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Verify version for stable releases
+        if: ${{ !github.event.release.prerelease }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          STABLE_TAG=$(grep -i "^Stable tag:" readme.txt | head -1 | sed 's/[Ss]table tag:[[:space:]]*//' | tr -d '[:space:]')
+          PLUGIN_VERSION=$(grep -i "^ \* Version:" fediboost.php | head -1 | sed 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
+          CONSTANT_VERSION=$(grep "define( 'FEDIBOOST_VERSION'" fediboost.php | head -1 | sed "s/.*'FEDIBOOST_VERSION',[[:space:]]*'//" | sed "s/'.*//" | tr -d '[:space:]')
+
+          echo "Release tag version: $VERSION"
+          echo "readme.txt Stable tag: $STABLE_TAG"
+          echo "Plugin header Version: $PLUGIN_VERSION"
+          echo "FEDIBOOST_VERSION constant: $CONSTANT_VERSION"
+
+          MISMATCH=""
+          if [ "$STABLE_TAG" != "$VERSION" ]; then
+            MISMATCH="- **readme.txt** Stable tag is \`$STABLE_TAG\`, expected \`$VERSION\`"$'\n'
+          fi
+          if [ "$PLUGIN_VERSION" != "$VERSION" ]; then
+            MISMATCH="${MISMATCH}- **fediboost.php** Version header is \`$PLUGIN_VERSION\`, expected \`$VERSION\`"$'\n'
+          fi
+          if [ "$CONSTANT_VERSION" != "$VERSION" ]; then
+            MISMATCH="${MISMATCH}- **fediboost.php** FEDIBOOST_VERSION constant is \`$CONSTANT_VERSION\`, expected \`$VERSION\`"$'\n'
+          fi
+
+          if [ -n "$MISMATCH" ]; then
+            echo "::error::Version mismatch detected. Aborting deploy."
+            BODY="The deploy workflow for release **$GITHUB_REF_NAME** was aborted because of a version mismatch:
+
+$MISMATCH
+Update the version numbers and create a new release to retry.
+
+[Failed run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
+            gh issue create \
+              --title "Deploy failed: version mismatch for $GITHUB_REF_NAME" \
+              --body "$BODY"
+            exit 1
+          fi
+
+      - name: Deploy to WordPress.org SVN
+        if: ${{ !github.event.release.prerelease }}
+        id: deploy
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # v2.3.0
+        with:
+          generate-zip: true
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: fediboost
+
+      - name: Upload release artifact
+        if: ${{ !github.event.release.prerelease }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" "${{ steps.deploy.outputs.zip-path }}" --clobber
