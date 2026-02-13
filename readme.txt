@@ -1,5 +1,5 @@
 === FediBoost ===
-Contributors: flavor
+Contributors: kraftbj
 Tags: activitypub, mastodon, fediverse, boost, social
 Requires at least: 6.9
 Tested up to: 6.9
