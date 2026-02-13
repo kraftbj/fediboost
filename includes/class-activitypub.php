@@ -175,9 +175,27 @@ class ActivityPub {
 			return false;
 		}
 
-		$url = \Activitypub\get_post_id( $post );
+		$url = \Activitypub\get_post_id( $post->ID );
 
-		if ( empty( $url ) ) {
+		if ( is_wp_error( $url ) ) {
+			$this->log_error(
+				'ActivityPub get_post_id returned error',
+				array(
+					'post_id' => $post->ID,
+					'error'   => $url->get_error_message(),
+				)
+			);
+			return false;
+		}
+
+		if ( ! is_string( $url ) || empty( $url ) || ! wp_http_validate_url( $url ) ) {
+			$this->log_error(
+				'ActivityPub get_post_id returned invalid URL',
+				array(
+					'post_id' => $post->ID,
+					'type'    => gettype( $url ),
+				)
+			);
 			return false;
 		}
 
