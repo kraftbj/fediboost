@@ -3,7 +3,7 @@
  * Plugin Name: FediBoost
  * Plugin URI: https://github.com/kraftbj/fediboost
  * Description: Automatically boost WordPress posts on connected Mastodon accounts when published via ActivityPub.
- * Version: 0.1.0
+ * Version: 1.0.0
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Requires Plugins: activitypub
@@ -50,7 +50,7 @@ function fediboost_php_version_notice() {
 }
 
 // Define plugin constants.
-define( 'FEDIBOOST_VERSION', '0.1.0' );
+define( 'FEDIBOOST_VERSION', '1.0.0' );
 define( 'FEDIBOOST_PLUGIN_FILE', __FILE__ );
 define( 'FEDIBOOST_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FEDIBOOST_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
