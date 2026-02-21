@@ -77,7 +77,7 @@ Control whether a specific post should be boosted. Return false to skip boosting
 
 = fediboost_boost_delay =
 
-Delay in seconds after ActivityPub federation completes before the boost is executed. In the fallback path (when the federation hook is unavailable), this delay is measured from post publication. Default: 30.
+Delay in seconds after ActivityPub federation completes before the boost is executed. This delay is only used when the federation completion hook fires successfully. Default: 30.
 
 **Parameters:**
 

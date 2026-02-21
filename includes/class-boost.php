@@ -160,9 +160,13 @@ class Boost {
 		// Store a transient mapping the ActivityPub URL to this post ID so we can
 		// identify it when the activitypub_outbox_processing_complete hook fires.
 		$activitypub_url = $activitypub->get_activitypub_url( $post );
-		if ( $activitypub_url ) {
-			set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
+
+		if ( ! $activitypub_url ) {
+			$this->log_info( 'No ActivityPub URL available, skipping boost', array( 'post_id' => $post_id ) );
+			return;
 		}
+
+		set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
 
 		// Schedule a fallback boost in case the ActivityPub federation hook doesn't fire.
 		$this->schedule_fallback_boost( $post_id );
@@ -189,7 +193,12 @@ class Boost {
 		if ( ! $type ) {
 			// Fall back to parsing the activity JSON if meta is unavailable.
 			$activity = json_decode( $json, true );
-			$type     = isset( $activity['type'] ) ? $activity['type'] : '';
+
+			if ( ! is_array( $activity ) ) {
+				return;
+			}
+
+			$type = isset( $activity['type'] ) ? $activity['type'] : '';
 		}
 
 		if ( 'Create' !== $type ) {
@@ -204,6 +213,11 @@ class Boost {
 			if ( ! isset( $activity ) ) {
 				$activity = json_decode( $json, true );
 			}
+
+			if ( ! is_array( $activity ) ) {
+				return;
+			}
+
 			$object    = isset( $activity['object'] ) ? $activity['object'] : array();
 			$object_id = isset( $object['id'] ) ? $object['id'] : '';
 		}
