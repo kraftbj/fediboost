@@ -11,6 +11,22 @@
 class Test_Plugin_Foundation extends WP_UnitTestCase {
 
 	/**
+	 * Set up test fixtures.
+	 */
+	public function set_up() {
+		parent::set_up();
+		wp_clear_scheduled_hook( 'fediboost_boost_post' );
+	}
+
+	/**
+	 * Tear down test fixtures.
+	 */
+	public function tear_down() {
+		wp_clear_scheduled_hook( 'fediboost_boost_post' );
+		parent::tear_down();
+	}
+
+	/**
 	 * Test that activation hook initializes default options.
 	 */
 	public function test_activation_hook_initializes_options() {
@@ -44,6 +60,13 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	public function test_admin_menu_registered_for_authorized_users() {
 		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
+		set_current_screen( 'dashboard' );
+
+		// Ensure the admin_menu hook is registered. The singleton may already
+		// exist from an earlier test suite, with its hooks removed by the test
+		// framework's global state restoration, so re-add explicitly.
+		$admin = FediBoost\Admin::get_instance();
+		add_action( 'admin_menu', array( $admin, 'register_admin_menu' ) );
 
 		global $submenu;
 		$submenu = array();
