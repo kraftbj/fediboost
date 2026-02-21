@@ -84,3 +84,13 @@ $wpdb->query(
 		$wpdb->esc_like( '_transient_timeout_fediboost_account_' ) . '%'
 	)
 );
+
+// Delete transients with fediboost_pending_ prefix (pending boost markers).
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Required for transient cleanup by prefix
+$wpdb->query(
+	$wpdb->prepare(
+		"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+		$wpdb->esc_like( '_transient_fediboost_pending_' ) . '%',
+		$wpdb->esc_like( '_transient_timeout_fediboost_pending_' ) . '%'
+	)
+);

@@ -72,8 +72,9 @@ require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
  *   plugins_loaded            → fediboost_init()
  *
  * FediBoost\Boost::init_hooks():
- *   wp_after_insert_post (priority 50) → on_post_publish()
- *   fediboost_boost_post (cron)        → execute_boost()
+ *   wp_after_insert_post (priority 50)              → on_post_publish()
+ *   activitypub_outbox_processing_complete           → on_federation_complete()
+ *   fediboost_boost_post (cron)                      → execute_boost()
  *
  * FediBoost\Admin::init_hooks():
  *   admin_menu             → register_admin_menu()

@@ -34,13 +34,22 @@ class Boost {
 	const CRON_HOOK = 'fediboost_boost_post';
 
 	/**
-	 * Boost delay in seconds (30 seconds to allow ActivityPub federation).
+	 * Boost delay in seconds after ActivityPub federation completes.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @var int
 	 */
 	const BOOST_DELAY = 30;
+
+	/**
+	 * Fallback delay in seconds when the ActivityPub federation hook does not fire.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @var int
+	 */
+	const FALLBACK_DELAY = 300;
 
 	/**
 	 * Single instance of the class.
@@ -83,12 +92,19 @@ class Boost {
 		// Hook into post publish event at priority 50 (after ActivityPub's priority 33).
 		add_action( 'wp_after_insert_post', array( $this, 'on_post_publish' ), 50, 4 );
 
+		// Hook into ActivityPub federation completion to schedule boost after federation.
+		add_action( 'activitypub_outbox_processing_complete', array( $this, 'on_federation_complete' ), 10, 4 );
+
 		// Register cron hook handler.
 		add_action( self::CRON_HOOK, array( $this, 'execute_boost' ) );
 	}
 
 	/**
 	 * Handle post publish event.
+	 *
+	 * Marks the post as pending boost and schedules a fallback. The primary boost
+	 * scheduling happens in on_federation_complete() after ActivityPub has finished
+	 * federating the post.
 	 *
 	 * @since 1.0.0
 	 *
@@ -136,7 +152,84 @@ class Boost {
 			return;
 		}
 
-		// Schedule the boost.
+		// Store a transient mapping the ActivityPub URL to this post ID so we can
+		// identify it when the activitypub_outbox_processing_complete hook fires.
+		$activitypub_url = $activitypub->get_activitypub_url( $post );
+		if ( $activitypub_url ) {
+			set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
+		}
+
+		// Schedule a fallback boost in case the ActivityPub federation hook doesn't fire.
+		$this->schedule_fallback_boost( $post_id );
+	}
+
+	/**
+	 * Handle ActivityPub federation completion.
+	 *
+	 * Fires after the ActivityPub plugin has finished sending a post to all follower
+	 * inboxes. Cancels the fallback boost and reschedules the boost relative to
+	 * federation completion rather than post publish time.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array  $inboxes         Target inbox URLs.
+	 * @param string $json            The ActivityPub Activity JSON.
+	 * @param int    $actor_id        The actor user ID.
+	 * @param int    $outbox_item_id  The outbox item post ID.
+	 */
+	public function on_federation_complete( $inboxes, $json, $actor_id, $outbox_item_id ) {
+		// Only process Create activities (new posts, not updates or deletes).
+		$type = get_post_meta( $outbox_item_id, '_activitypub_activity_type', true );
+
+		if ( ! $type ) {
+			// Fall back to parsing the activity JSON if meta is unavailable.
+			$activity = json_decode( $json, true );
+			$type     = isset( $activity['type'] ) ? $activity['type'] : '';
+		}
+
+		if ( 'Create' !== $type ) {
+			return;
+		}
+
+		// Get the ActivityPub object URL from outbox item meta.
+		$object_id = get_post_meta( $outbox_item_id, '_activitypub_object_id', true );
+
+		if ( empty( $object_id ) ) {
+			// Fall back to parsing the activity JSON.
+			if ( ! isset( $activity ) ) {
+				$activity = json_decode( $json, true );
+			}
+			$object    = isset( $activity['object'] ) ? $activity['object'] : array();
+			$object_id = isset( $object['id'] ) ? $object['id'] : '';
+		}
+
+		if ( empty( $object_id ) ) {
+			return;
+		}
+
+		// Look up the pending boost transient to find the WordPress post ID.
+		$transient_key = 'fediboost_pending_' . md5( $object_id );
+		$post_id       = get_transient( $transient_key );
+
+		if ( ! $post_id ) {
+			return;
+		}
+
+		$this->log_info(
+			'Federation complete, rescheduling boost',
+			array(
+				'post_id'        => $post_id,
+				'outbox_item_id' => $outbox_item_id,
+			)
+		);
+
+		// Clean up the pending transient.
+		delete_transient( $transient_key );
+
+		// Cancel the fallback boost.
+		$this->unschedule_boost( $post_id );
+
+		// Schedule the boost for the configured delay after federation completes.
 		$this->schedule_boost( $post_id );
 	}
 
@@ -184,6 +277,71 @@ class Boost {
 	}
 
 	/**
+	 * Schedule a fallback boost with a longer delay.
+	 *
+	 * Used as a safety net in case the activitypub_outbox_processing_complete hook
+	 * does not fire (e.g., older ActivityPub plugin version). If the federation hook
+	 * fires first, it will cancel this fallback and reschedule with the normal delay.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int $post_id The post ID to boost.
+	 * @return bool True if scheduled, false on failure.
+	 */
+	public function schedule_fallback_boost( $post_id ) {
+		// Check if already scheduled (prevent duplicates).
+		if ( wp_next_scheduled( self::CRON_HOOK, array( $post_id ) ) ) {
+			$this->log_info( 'Fallback boost already scheduled', array( 'post_id' => $post_id ) );
+			return false;
+		}
+
+		/**
+		 * Filters the fallback delay in seconds before a boost is executed when the
+		 * ActivityPub federation completion hook does not fire.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $delay Fallback delay in seconds. Default 300 (5 minutes).
+		 */
+		$delay          = apply_filters( 'fediboost_fallback_delay', self::FALLBACK_DELAY );
+		$scheduled_time = time() + $delay;
+
+		$result = wp_schedule_single_event( $scheduled_time, self::CRON_HOOK, array( $post_id ) );
+
+		if ( false === $result ) {
+			$this->log_error( 'Failed to schedule fallback boost', array( 'post_id' => $post_id ) );
+			return false;
+		}
+
+		$this->log_info(
+			'Fallback boost scheduled',
+			array(
+				'post_id'        => $post_id,
+				'scheduled_time' => $scheduled_time,
+				'delay'          => $delay,
+			)
+		);
+
+		return true;
+	}
+
+	/**
+	 * Unschedule a pending boost for a post.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int $post_id The post ID.
+	 */
+	private function unschedule_boost( $post_id ) {
+		$timestamp = wp_next_scheduled( self::CRON_HOOK, array( $post_id ) );
+
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, self::CRON_HOOK, array( $post_id ) );
+			$this->log_info( 'Cancelled previous boost schedule', array( 'post_id' => $post_id ) );
+		}
+	}
+
+	/**
 	 * Execute boost for a post on all connected accounts.
 	 *
 	 * @since 1.0.0
@@ -208,6 +366,11 @@ class Boost {
 		// Get ActivityPub URL for the post.
 		$activitypub     = ActivityPub::get_instance();
 		$activitypub_url = $activitypub->get_activitypub_url( $post );
+
+		// Clean up any stale pending boost transient (fallback path).
+		if ( $activitypub_url ) {
+			delete_transient( 'fediboost_pending_' . md5( $activitypub_url ) );
+		}
 
 		if ( false === $activitypub_url ) {
 			$this->log_error( 'Could not get ActivityPub URL', array( 'post_id' => $post_id ) );
