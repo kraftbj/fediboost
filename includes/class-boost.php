@@ -45,7 +45,7 @@ class Boost {
 	/**
 	 * Fallback delay in seconds when the ActivityPub federation hook does not fire.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
 	 *
 	 * @var int
 	 */
@@ -92,7 +92,12 @@ class Boost {
 		// Hook into post publish event at priority 50 (after ActivityPub's priority 33).
 		add_action( 'wp_after_insert_post', array( $this, 'on_post_publish' ), 50, 4 );
 
-		// Hook into ActivityPub federation completion to schedule boost after federation.
+		/*
+		 * Hook into ActivityPub federation completion to schedule boost after federation.
+		 * Relies on the activitypub_outbox_processing_complete action, added in ActivityPub 5.4.0.
+		 * If this hook is unavailable (older plugin version or plugin inactive), the fallback
+		 * scheduled in on_post_publish() will handle the boost instead.
+		 */
 		add_action( 'activitypub_outbox_processing_complete', array( $this, 'on_federation_complete' ), 10, 4 );
 
 		// Register cron hook handler.
@@ -170,7 +175,7 @@ class Boost {
 	 * inboxes. Cancels the fallback boost and reschedules the boost relative to
 	 * federation completion rather than post publish time.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
 	 *
 	 * @param array  $inboxes         Target inbox URLs.
 	 * @param string $json            The ActivityPub Activity JSON.
@@ -283,7 +288,7 @@ class Boost {
 	 * does not fire (e.g., older ActivityPub plugin version). If the federation hook
 	 * fires first, it will cancel this fallback and reschedule with the normal delay.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
 	 *
 	 * @param int $post_id The post ID to boost.
 	 * @return bool True if scheduled, false on failure.
@@ -299,7 +304,7 @@ class Boost {
 		 * Filters the fallback delay in seconds before a boost is executed when the
 		 * ActivityPub federation completion hook does not fire.
 		 *
-		 * @since 1.1.0
+		 * @since 1.0.1
 		 *
 		 * @param int $delay Fallback delay in seconds. Default 300 (5 minutes).
 		 */
@@ -328,7 +333,7 @@ class Boost {
 	/**
 	 * Unschedule a pending boost for a post.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
 	 *
 	 * @param int $post_id The post ID.
 	 */
