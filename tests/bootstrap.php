@@ -5,10 +5,6 @@
  * @package kraftbj/fediboost
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
 // Define test environment.
 define( 'FEDIBOOST_TESTING', true );
 
