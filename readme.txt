@@ -77,7 +77,7 @@ Control whether a specific post should be boosted. Return false to skip boosting
 
 = fediboost_boost_delay =
 
-Delay in seconds between post publication and the boost action. Default: 30.
+Delay in seconds after ActivityPub federation completes before the boost is executed. This delay is only used when the federation completion hook fires successfully. Default: 30.
 
 **Parameters:**
 
@@ -86,8 +86,23 @@ Delay in seconds between post publication and the boost action. Default: 30.
 **Example:**
 
 `add_filter( 'fediboost_boost_delay', function( $delay ) {
-    // Wait 2 minutes before boosting.
+    // Wait 2 minutes after federation before boosting.
     return 120;
+} );`
+
+= fediboost_fallback_delay =
+
+Delay in seconds before a boost is executed when the ActivityPub federation completion hook does not fire. This acts as a safety net for older versions of the ActivityPub plugin that do not support the `activitypub_outbox_processing_complete` hook. If the federation hook fires first, the fallback is cancelled and `fediboost_boost_delay` is used instead. Default: 300 (5 minutes).
+
+**Parameters:**
+
+* `$delay` (int) — The fallback delay in seconds.
+
+**Example:**
+
+`add_filter( 'fediboost_fallback_delay', function( $delay ) {
+    // Wait 10 minutes in the fallback path.
+    return 600;
 } );`
 
 = fediboost_manage_capability =
@@ -150,6 +165,10 @@ Each Mastodon instance has its own privacy policy and terms of service. You can 
 This plugin does not send data to any third-party service other than the Mastodon instance(s) you explicitly configure.
 
 == Changelog ==
+
+= 1.0.1 =
+* Delay boost scheduling until after ActivityPub federation completes
+* Add fallback boost scheduling for older ActivityPub versions
 
 = 1.0.0 =
 * Initial release

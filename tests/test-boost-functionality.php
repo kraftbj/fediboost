@@ -58,6 +58,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Tear down test environment.
 	 */
 	public function tear_down() {
+		remove_all_filters( 'fediboost_fallback_delay' );
 		update_option( 'fediboost_accounts', array() );
 		wp_clear_scheduled_hook( 'fediboost_boost_post' );
 		parent::tear_down();
@@ -234,5 +235,134 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 		// Only one account should be considered connected.
 		$this->assertCount( 1, $connected );
 		$this->assertEquals( 'user2', $connected[0]['username'] );
+	}
+
+	/**
+	 * Test schedule_fallback_boost schedules cron with the fallback delay.
+	 */
+	public function test_schedule_fallback_boost() {
+		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+
+		$this->assertFalse( wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
+
+		$before = time();
+		$result = $this->boost->schedule_fallback_boost( $post_id );
+		$after  = time();
+
+		$this->assertTrue( $result );
+
+		$scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+		$this->assertNotFalse( $scheduled );
+
+		// Should be scheduled ~300 seconds out (FALLBACK_DELAY).
+		$this->assertGreaterThanOrEqual( $before + Boost::FALLBACK_DELAY, $scheduled );
+		$this->assertLessThanOrEqual( $after + Boost::FALLBACK_DELAY, $scheduled );
+	}
+
+	/**
+	 * Test schedule_fallback_boost respects the fediboost_fallback_delay filter.
+	 */
+	public function test_schedule_fallback_boost_uses_filter() {
+		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+
+		add_filter(
+			'fediboost_fallback_delay',
+			function () {
+				return 600;
+			}
+		);
+
+		$before = time();
+		$this->boost->schedule_fallback_boost( $post_id );
+		$after = time();
+
+		$scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+		$this->assertGreaterThanOrEqual( $before + 600, $scheduled );
+		$this->assertLessThanOrEqual( $after + 600, $scheduled );
+	}
+
+	/**
+	 * Test schedule_boost prevents duplicate scheduling.
+	 */
+	public function test_schedule_boost_prevents_duplicates() {
+		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+
+		$first  = $this->boost->schedule_boost( $post_id );
+		$second = $this->boost->schedule_boost( $post_id );
+
+		$this->assertTrue( $first );
+		$this->assertFalse( $second );
+	}
+
+	/**
+	 * Test schedule_fallback_boost prevents duplicate scheduling.
+	 */
+	public function test_schedule_fallback_boost_prevents_duplicates() {
+		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+
+		$first  = $this->boost->schedule_fallback_boost( $post_id );
+		$second = $this->boost->schedule_fallback_boost( $post_id );
+
+		$this->assertTrue( $first );
+		$this->assertFalse( $second );
+	}
+
+	/**
+	 * Test on_federation_complete reschedules boost with shorter delay.
+	 */
+	public function test_on_federation_complete_reschedules_boost() {
+		$post_id    = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$object_url = 'https://example.com/?p=' . $post_id;
+
+		// Simulate the pending transient set by on_post_publish.
+		set_transient( 'fediboost_pending_' . md5( $object_url ), $post_id, HOUR_IN_SECONDS );
+
+		// Simulate a fallback cron event already scheduled.
+		wp_schedule_single_event( time() + Boost::FALLBACK_DELAY, 'fediboost_boost_post', array( $post_id ) );
+		$this->assertNotFalse( wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
+
+		// Create an outbox item post with the required meta.
+		$outbox_id = self::factory()->post->create( array( 'post_type' => 'ap_outbox' ) );
+		update_post_meta( $outbox_id, '_activitypub_activity_type', 'Create' );
+		update_post_meta( $outbox_id, '_activitypub_object_id', $object_url );
+
+		$before = time();
+		$this->boost->on_federation_complete( array( 'https://remote.example/inbox' ), '{}', 1, $outbox_id );
+		$after = time();
+
+		// The fallback should have been cancelled and a new shorter-delay event scheduled.
+		$scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+		$this->assertNotFalse( $scheduled );
+		$this->assertGreaterThanOrEqual( $before + Boost::BOOST_DELAY, $scheduled );
+		$this->assertLessThanOrEqual( $after + Boost::BOOST_DELAY, $scheduled );
+
+		// The pending transient should be cleaned up.
+		$this->assertFalse( get_transient( 'fediboost_pending_' . md5( $object_url ) ) );
+	}
+
+	/**
+	 * Test on_federation_complete ignores non-Create activities.
+	 */
+	public function test_on_federation_complete_ignores_non_create_activities() {
+		$post_id    = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$object_url = 'https://example.com/?p=' . $post_id;
+
+		// Set up a pending transient and fallback event.
+		set_transient( 'fediboost_pending_' . md5( $object_url ), $post_id, HOUR_IN_SECONDS );
+		wp_schedule_single_event( time() + Boost::FALLBACK_DELAY, 'fediboost_boost_post', array( $post_id ) );
+		$original_scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+
+		// Create an outbox item with an Update activity type.
+		$outbox_id = self::factory()->post->create( array( 'post_type' => 'ap_outbox' ) );
+		update_post_meta( $outbox_id, '_activitypub_activity_type', 'Update' );
+		update_post_meta( $outbox_id, '_activitypub_object_id', $object_url );
+
+		$this->boost->on_federation_complete( array( 'https://remote.example/inbox' ), '{}', 1, $outbox_id );
+
+		// The fallback schedule should remain unchanged.
+		$this->assertEquals( $original_scheduled, wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
+
+		// The transient should still exist.
+		$this->assertEquals( $post_id, get_transient( 'fediboost_pending_' . md5( $object_url ) ) );
 	}
 }
