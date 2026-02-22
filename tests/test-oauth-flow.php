@@ -16,7 +16,7 @@ use FediBoost\OAuth;
  *
  * @package kraftbj/fediboost
  */
-class Test_OAuth_Flow extends WP_UnitTestCase {
+class Test_OAuth_Flow extends FediBoost_TestCase {
 
 	/**
 	 * OAuth instance.

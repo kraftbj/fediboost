@@ -11,7 +11,7 @@ use FediBoost\Admin;
 /**
  * Admin UI Tests
  */
-class Test_Admin_UI extends WP_UnitTestCase {
+class Test_Admin_UI extends FediBoost_TestCase {
 
 	/**
 	 * Accounts helper instance.
@@ -51,7 +51,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		);
 
 		// Create admin user and set as current.
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
@@ -108,7 +108,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	 */
 	public function test_connect_form_contains_required_fields() {
 		// Create admin user.
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
@@ -131,7 +131,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 	 */
 	public function test_admin_notices_display_correctly() {
 		// Create admin user.
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
 		$admin = Admin::get_instance();
@@ -182,7 +182,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		$this->accounts->clear_all_accounts();
 
 		// Create admin user.
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
 		// Get admin instance and capture output.
@@ -214,7 +214,7 @@ class Test_Admin_UI extends WP_UnitTestCase {
 		$this->accounts->update_account_status( $account_key, Accounts::STATUS_DISCONNECTED );
 
 		// Create admin user.
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
 		$admin = Admin::get_instance();

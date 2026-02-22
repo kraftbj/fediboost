@@ -19,7 +19,7 @@ use FediBoost\Security;
  *
  * Strategic integration and edge case tests for MVP release validation.
  */
-class Test_Integration extends WP_UnitTestCase {
+class Test_Integration extends FediBoost_TestCase {
 
 	/**
 	 * Set up test environment.
@@ -121,7 +121,7 @@ class Test_Integration extends WP_UnitTestCase {
 
 		// Create a post that simulates a scheduled post becoming published.
 		// The key is that post_before was 'future' and post is now 'publish'.
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'publish',
 				'post_title'  => 'Scheduled Post Now Published',
@@ -166,7 +166,7 @@ class Test_Integration extends WP_UnitTestCase {
 	public function test_activitypub_unavailable_blocks_boost_eligibility() {
 		$activitypub = ActivityPub::get_instance();
 
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'publish',
 				'post_title'  => 'Test Post',
@@ -192,7 +192,7 @@ class Test_Integration extends WP_UnitTestCase {
 		$security = Security::get_instance();
 
 		// Create a subscriber user.
-		$subscriber = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$subscriber = $this->create_user( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber );
 
 		// Verify capability check fails.
@@ -200,13 +200,13 @@ class Test_Integration extends WP_UnitTestCase {
 		$this->assertFalse( $security->verify_user_capability( 'settings_access' ) );
 
 		// Create an editor user (still no manage_options).
-		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$editor = $this->create_user( array( 'role' => 'editor' ) );
 		wp_set_current_user( $editor );
 
 		$this->assertFalse( $security->user_can_manage() );
 
 		// Only administrator should pass.
-		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin );
 
 		$this->assertTrue( $security->user_can_manage() );
@@ -248,7 +248,7 @@ class Test_Integration extends WP_UnitTestCase {
 		$boost = Boost::get_instance();
 
 		// Create and then delete a post.
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'publish',
 				'post_title'  => 'Will Be Deleted',

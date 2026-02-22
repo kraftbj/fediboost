@@ -17,7 +17,7 @@ use FediBoost\Encryption;
  *
  * Tests for ActivityPub integration and auto-boost functionality.
  */
-class Test_Boost_Functionality extends WP_UnitTestCase {
+class Test_Boost_Functionality extends FediBoost_TestCase {
 
 	/**
 	 * ActivityPub integration instance.
@@ -70,7 +70,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Note: When ActivityPub plugin is not active, this returns false which is expected.
 	 */
 	public function test_activitypub_url_resolution_fallback_when_unavailable() {
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'publish',
 				'post_title'  => 'Test Post',
@@ -91,7 +91,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Posts are considered "disabled" for federation when the plugin is not active.
 	 */
 	public function test_is_post_disabled_when_activitypub_unavailable() {
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'publish',
 			)
@@ -109,7 +109,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test visibility check returns false (private) when ActivityPub unavailable.
 	 */
 	public function test_visibility_check_when_activitypub_unavailable() {
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'publish',
 			)
@@ -126,7 +126,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 */
 	public function test_cron_event_scheduled_on_publish() {
 		// Create a post in draft status.
-		$post_id = self::factory()->post->create(
+		$post_id = $this->create_post(
 			array(
 				'post_status' => 'draft',
 				'post_title'  => 'Test Scheduled Post',
@@ -241,7 +241,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test schedule_fallback_boost schedules cron with the fallback delay.
 	 */
 	public function test_schedule_fallback_boost() {
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = $this->create_post( array( 'post_status' => 'draft' ) );
 
 		$this->assertFalse( wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
 
@@ -263,7 +263,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test schedule_fallback_boost respects the fediboost_fallback_delay filter.
 	 */
 	public function test_schedule_fallback_boost_uses_filter() {
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = $this->create_post( array( 'post_status' => 'draft' ) );
 
 		add_filter(
 			'fediboost_fallback_delay',
@@ -285,7 +285,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test schedule_boost prevents duplicate scheduling.
 	 */
 	public function test_schedule_boost_prevents_duplicates() {
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = $this->create_post( array( 'post_status' => 'draft' ) );
 
 		$first  = $this->boost->schedule_boost( $post_id );
 		$second = $this->boost->schedule_boost( $post_id );
@@ -298,7 +298,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test schedule_fallback_boost prevents duplicate scheduling.
 	 */
 	public function test_schedule_fallback_boost_prevents_duplicates() {
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = $this->create_post( array( 'post_status' => 'draft' ) );
 
 		$first  = $this->boost->schedule_fallback_boost( $post_id );
 		$second = $this->boost->schedule_fallback_boost( $post_id );
@@ -311,7 +311,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test on_federation_complete reschedules boost with shorter delay.
 	 */
 	public function test_on_federation_complete_reschedules_boost() {
-		$post_id    = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
 		$object_url = 'https://example.com/?p=' . $post_id;
 
 		// Simulate the pending transient set by on_post_publish.
@@ -322,7 +322,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 		$this->assertNotFalse( wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
 
 		// Create an outbox item post with the required meta.
-		$outbox_id = self::factory()->post->create( array( 'post_type' => 'ap_outbox' ) );
+		$outbox_id = $this->create_post( array( 'post_type' => 'ap_outbox' ) );
 		update_post_meta( $outbox_id, '_activitypub_activity_type', 'Create' );
 		update_post_meta( $outbox_id, '_activitypub_object_id', $object_url );
 
@@ -344,7 +344,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 	 * Test on_federation_complete ignores non-Create activities.
 	 */
 	public function test_on_federation_complete_ignores_non_create_activities() {
-		$post_id    = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
 		$object_url = 'https://example.com/?p=' . $post_id;
 
 		// Set up a pending transient and fallback event.
@@ -353,7 +353,7 @@ class Test_Boost_Functionality extends WP_UnitTestCase {
 		$original_scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
 
 		// Create an outbox item with an Update activity type.
-		$outbox_id = self::factory()->post->create( array( 'post_type' => 'ap_outbox' ) );
+		$outbox_id = $this->create_post( array( 'post_type' => 'ap_outbox' ) );
 		update_post_meta( $outbox_id, '_activitypub_activity_type', 'Update' );
 		update_post_meta( $outbox_id, '_activitypub_object_id', $object_url );
 

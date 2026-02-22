@@ -13,7 +13,7 @@ use FediBoost\Security;
 /**
  * Class Test_Security_Layer
  */
-class Test_Security_Layer extends WP_UnitTestCase {
+class Test_Security_Layer extends FediBoost_TestCase {
 
 	/**
 	 * Test that token encryption produces different output than input.
@@ -77,14 +77,14 @@ class Test_Security_Layer extends WP_UnitTestCase {
 		$security = Security::get_instance();
 
 		// Create a subscriber (no manage_options capability).
-		$subscriber = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$subscriber = $this->create_user( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber );
 
 		$this->assertFalse( $security->user_can_manage() );
 		$this->assertFalse( $security->verify_user_capability( 'test' ) );
 
 		// Create an administrator (has manage_options capability).
-		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin );
 
 		$this->assertTrue( $security->user_can_manage() );
