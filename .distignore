@@ -10,6 +10,7 @@
 .claude/
 .idea/
 CLAUDE.md
+AGENTS.md
 
 # Project management
 agent-os/
