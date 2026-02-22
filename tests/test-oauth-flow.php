@@ -165,7 +165,7 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 		);
 
 		// Store credentials with encrypted client_secret (matching cache_app_credentials behavior).
-		$encryption              = FediBoost\Encryption::get_instance();
+		$encryption              = Encryption::get_instance();
 		$apps                    = array();
 		$hostname                = wp_parse_url( $instance_url, PHP_URL_HOST );
 		$stored                  = $credentials;
