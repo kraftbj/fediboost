@@ -18,6 +18,8 @@ agent-os/
 
 # Documentation (not for distribution)
 TODO.md
+*-AUDIT.md
+CODE_REVIEW.md
 
 # Testing
 tests/
@@ -29,6 +31,7 @@ composer.json
 composer.lock
 vendor/
 node_modules/
+wordpress/
 dist/
 
 # Build artifacts
