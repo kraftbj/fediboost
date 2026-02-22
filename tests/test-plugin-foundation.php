@@ -8,7 +8,7 @@
 /**
  * Tests for plugin activation, deactivation, admin menu, and dependency checks.
  */
-class Test_Plugin_Foundation extends WP_UnitTestCase {
+class Test_Plugin_Foundation extends FediBoost_TestCase {
 
 	/**
 	 * Set up test fixtures.
@@ -58,7 +58,7 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	 * Test that admin menu is registered under Settings for users with manage_options.
 	 */
 	public function test_admin_menu_registered_for_authorized_users() {
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 		set_current_screen( 'dashboard' );
 
@@ -91,12 +91,12 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	 * Test that settings page requires manage_options capability.
 	 */
 	public function test_settings_page_requires_manage_options_capability() {
-		$subscriber = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$subscriber = $this->create_user( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber );
 
 		$this->assertFalse( current_user_can( 'manage_options' ) );
 
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 
 		$this->assertTrue( current_user_can( 'manage_options' ) );
@@ -106,7 +106,7 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	 * Test that admin notice displays when ActivityPub plugin is missing.
 	 */
 	public function test_activitypub_dependency_notice_when_missing() {
-		$admin_user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_user = $this->create_user( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin_user );
 		set_current_screen( 'dashboard' );
 

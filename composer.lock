@@ -4,9 +4,81 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b6209b176177951c1c5962b86c956ac7",
+    "content-hash": "092c667db178a56ad128473e6c4ee82e",
     "packages": [],
     "packages-dev": [
+        {
+            "name": "automattic/wordbless",
+            "version": "dev-allow-wp-7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Automattic/wordbless.git",
+                "reference": "98d8886d87e3d907cec9bdd45b5b529a271fc249"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Automattic/wordbless/zipball/98d8886d87e3d907cec9bdd45b5b529a271fc249",
+                "reference": "98d8886d87e3d907cec9bdd45b5b529a271fc249",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2.24",
+                "roots/wordpress": "^6.6 || ^7.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^7.5 || ^9.5",
+                "yoast/phpunit-polyfills": "^1.0"
+            },
+            "type": "wordpress-dropin",
+            "autoload": {
+                "psr-4": {
+                    "WorDBless\\": "src/",
+                    "WorDBless\\Composer\\": "src/Composer/"
+                }
+            },
+            "scripts": {
+                "post-install-cmd": [
+                    "WorDBless\\Composer\\InstallDropin::copy"
+                ],
+                "post-update-cmd": [
+                    "WorDBless\\Composer\\InstallDropin::copy"
+                ],
+                "ci": [
+                    "phive install --trust-gpg-keys C00543248C87FB13,31C7E470E2138192,A978220305CD5C32",
+                    "@composer validate --strict",
+                    "tools/composer-normalize normalize --dry-run",
+                    "@composer require --working-dir=tools --dev 'wp-coding-standards/wpcs:^3.1.0' 'phpcsstandards/phpcsutils:^1.0' 'phpcsstandards/phpcsextra:^1.0'",
+                    "tools/phpcs --config-set installed_paths tools/vendor/wp-coding-standards/wpcs,tools/vendor/phpcsstandards/phpcsutils,tools/vendor/phpcsstandards/phpcsextra",
+                    "tools/phpcs -s --standard=WordPress-Core --exclude=WordPress.Files.FileName --ignore=*/sqlite-database-integration/* src/",
+                    "@composer require --working-dir=tools --dev 'szepeviktor/phpstan-wordpress:^1.1'",
+                    "tools/vendor/bin/phpstan analyze --memory-limit=2G src/",
+                    "@phpunit"
+                ],
+                "fix-cs": [
+                    "tools/vendor/bin/phpcbf -s --standard=WordPress-Core --exclude=WordPress.Files.FileName --ignore=*/sqlite-database-integration/* src/"
+                ],
+                "phpunit": [
+                    "@composer install",
+                    "./vendor/phpunit/phpunit/phpunit --colors=always --bootstrap tests/bootstrap.php --testsuite general",
+                    "./vendor/phpunit/phpunit/phpunit --colors=always --bootstrap tests/bootstrap-uploads.php --testsuite uploads",
+                    "./vendor/phpunit/phpunit/phpunit --colors=always --bootstrap tests/bootstrap-sqlite.php --testsuite sqlite"
+                ]
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Automattic Inc."
+                }
+            ],
+            "description": "WorDBless allows you to use WordPress core functions in your PHPUnit tests without having to set up a database and the whole WordPress environment",
+            "support": {
+                "source": "https://github.com/Automattic/wordbless/tree/allow-wp-7.0",
+                "issues": "https://github.com/Automattic/wordbless/issues"
+            },
+            "time": "2026-02-22T17:20:16+00:00"
+        },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
             "version": "v1.2.0",
@@ -105,29 +177,30 @@
         },
         {
             "name": "doctrine/instantiator",
-            "version": "2.1.0",
+            "version": "1.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/instantiator.git",
-                "reference": "23da848e1a2308728fe5fdddabf4be17ff9720c7"
+                "reference": "0a0fa9780f5d4e507415a065172d26a98d02047b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/instantiator/zipball/23da848e1a2308728fe5fdddabf4be17ff9720c7",
-                "reference": "23da848e1a2308728fe5fdddabf4be17ff9720c7",
+                "url": "https://api.github.com/repos/doctrine/instantiator/zipball/0a0fa9780f5d4e507415a065172d26a98d02047b",
+                "reference": "0a0fa9780f5d4e507415a065172d26a98d02047b",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.4"
+                "php": "^7.1 || ^8.0"
             },
             "require-dev": {
-                "doctrine/coding-standard": "^14",
+                "doctrine/coding-standard": "^9 || ^11",
                 "ext-pdo": "*",
                 "ext-phar": "*",
-                "phpbench/phpbench": "^1.2",
-                "phpstan/phpstan": "^2.1",
-                "phpstan/phpstan-phpunit": "^2.0",
-                "phpunit/phpunit": "^10.5.58"
+                "phpbench/phpbench": "^0.16 || ^1",
+                "phpstan/phpstan": "^1.4",
+                "phpstan/phpstan-phpunit": "^1",
+                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.5",
+                "vimeo/psalm": "^4.30 || ^5.4"
             },
             "type": "library",
             "autoload": {
@@ -154,7 +227,7 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/instantiator/issues",
-                "source": "https://github.com/doctrine/instantiator/tree/2.1.0"
+                "source": "https://github.com/doctrine/instantiator/tree/1.5.0"
             },
             "funding": [
                 {
@@ -170,7 +243,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-01-05T06:47:08+00:00"
+            "time": "2022-12-30T00:15:36+00:00"
         },
         {
             "name": "myclabs/deep-copy",
@@ -904,16 +977,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "9.6.31",
+            "version": "9.6.34",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "945d0b7f346a084ce5549e95289962972c4272e5"
+                "reference": "b36f02317466907a230d3aa1d34467041271ef4a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/945d0b7f346a084ce5549e95289962972c4272e5",
-                "reference": "945d0b7f346a084ce5549e95289962972c4272e5",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/b36f02317466907a230d3aa1d34467041271ef4a",
+                "reference": "b36f02317466907a230d3aa1d34467041271ef4a",
                 "shasum": ""
             },
             "require": {
@@ -935,7 +1008,7 @@
                 "phpunit/php-timer": "^5.0.3",
                 "sebastian/cli-parser": "^1.0.2",
                 "sebastian/code-unit": "^1.0.8",
-                "sebastian/comparator": "^4.0.9",
+                "sebastian/comparator": "^4.0.10",
                 "sebastian/diff": "^4.0.6",
                 "sebastian/environment": "^5.1.5",
                 "sebastian/exporter": "^4.0.8",
@@ -987,7 +1060,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.6.31"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.6.34"
             },
             "funding": [
                 {
@@ -1011,7 +1084,188 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-12-06T07:45:52+00:00"
+            "time": "2026-01-27T05:45:00+00:00"
+        },
+        {
+            "name": "roots/wordpress",
+            "version": "6.9.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/roots/wordpress.git",
+                "reference": "29e4eb49b2f4c591e39d4eb6705a27cf1ea40e45"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/roots/wordpress/zipball/29e4eb49b2f4c591e39d4eb6705a27cf1ea40e45",
+                "reference": "29e4eb49b2f4c591e39d4eb6705a27cf1ea40e45",
+                "shasum": ""
+            },
+            "require": {
+                "roots/wordpress-core-installer": "^3.0",
+                "roots/wordpress-no-content": "self.version"
+            },
+            "type": "metapackage",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT",
+                "GPL-2.0-or-later"
+            ],
+            "description": "WordPress is open source software you can use to create a beautiful website, blog, or app.",
+            "homepage": "https://wordpress.org/",
+            "keywords": [
+                "blog",
+                "cms",
+                "wordpress"
+            ],
+            "support": {
+                "issues": "https://github.com/roots/wordpress/issues",
+                "source": "https://github.com/roots/wordpress/tree/6.9.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/roots",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-05-23T18:54:22+00:00"
+        },
+        {
+            "name": "roots/wordpress-core-installer",
+            "version": "3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/roots/wordpress-core-installer.git",
+                "reference": "714d2e2a9e523f6e7bde4810d5a04aedf0ec217f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/roots/wordpress-core-installer/zipball/714d2e2a9e523f6e7bde4810d5a04aedf0ec217f",
+                "reference": "714d2e2a9e523f6e7bde4810d5a04aedf0ec217f",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0 || ^2.0",
+                "php": ">=7.2.24"
+            },
+            "conflict": {
+                "composer/installers": "<1.0.6"
+            },
+            "replace": {
+                "johnpbloch/wordpress-core-installer": "*"
+            },
+            "require-dev": {
+                "composer/composer": "^1.0 || ^2.0",
+                "phpunit/phpunit": "^8.5"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "Roots\\Composer\\WordPressCorePlugin"
+            },
+            "autoload": {
+                "psr-4": {
+                    "Roots\\Composer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "John P. Bloch",
+                    "email": "me@johnpbloch.com"
+                },
+                {
+                    "name": "Roots",
+                    "email": "team@roots.io"
+                }
+            ],
+            "description": "A Composer custom installer to handle installing WordPress as a dependency",
+            "keywords": [
+                "wordpress"
+            ],
+            "support": {
+                "issues": "https://github.com/roots/wordpress-core-installer/issues",
+                "source": "https://github.com/roots/wordpress-core-installer/tree/3.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/roots",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-05-23T18:47:25+00:00"
+        },
+        {
+            "name": "roots/wordpress-no-content",
+            "version": "6.9.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/WordPress/WordPress.git",
+                "reference": "6.9.1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://downloads.wordpress.org/release/wordpress-6.9.1-no-content.zip",
+                "reference": "6.9.1",
+                "shasum": "27121719e788b7c9e35cfcf8984ad8b42bd423d6"
+            },
+            "require": {
+                "php": ">= 7.2.24"
+            },
+            "provide": {
+                "wordpress/core-implementation": "6.9.1"
+            },
+            "suggest": {
+                "ext-curl": "Performs remote request operations.",
+                "ext-dom": "Used to validate Text Widget content and to automatically configuring IIS7+.",
+                "ext-exif": "Works with metadata stored in images.",
+                "ext-fileinfo": "Used to detect mimetype of file uploads.",
+                "ext-hash": "Used for hashing, including passwords and update packages.",
+                "ext-imagick": "Provides better image quality for media uploads.",
+                "ext-json": "Used for communications with other servers.",
+                "ext-libsodium": "Validates Signatures and provides securely random bytes.",
+                "ext-mbstring": "Used to properly handle UTF8 text.",
+                "ext-mysqli": "Connects to MySQL for database interactions.",
+                "ext-openssl": "Permits SSL-based connections to other hosts.",
+                "ext-pcre": "Increases performance of pattern matching in code searches.",
+                "ext-xml": "Used for XML parsing, such as from a third-party site.",
+                "ext-zip": "Used for decompressing Plugins, Themes, and WordPress update packages."
+            },
+            "type": "wordpress-core",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "WordPress Community",
+                    "homepage": "https://wordpress.org/about/"
+                }
+            ],
+            "description": "WordPress is open source software you can use to create a beautiful website, blog, or app.",
+            "homepage": "https://wordpress.org/",
+            "keywords": [
+                "blog",
+                "cms",
+                "wordpress"
+            ],
+            "support": {
+                "docs": "https://developer.wordpress.org/",
+                "forum": "https://wordpress.org/support/",
+                "irc": "irc://irc.freenode.net/wordpress",
+                "issues": "https://core.trac.wordpress.org/",
+                "rss": "https://wordpress.org/news/feed/",
+                "source": "https://core.trac.wordpress.org/browser",
+                "wiki": "https://codex.wordpress.org/"
+            },
+            "funding": [
+                {
+                    "url": "https://wordpressfoundation.org/donate/",
+                    "type": "other"
+                }
+            ],
+            "time": "2026-02-03T17:39:17+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -1182,16 +1436,16 @@
         },
         {
             "name": "sebastian/comparator",
-            "version": "4.0.9",
+            "version": "4.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/comparator.git",
-                "reference": "67a2df3a62639eab2cc5906065e9805d4fd5dfc5"
+                "reference": "e4df00b9b3571187db2831ae9aada2c6efbd715d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/comparator/zipball/67a2df3a62639eab2cc5906065e9805d4fd5dfc5",
-                "reference": "67a2df3a62639eab2cc5906065e9805d4fd5dfc5",
+                "url": "https://api.github.com/repos/sebastianbergmann/comparator/zipball/e4df00b9b3571187db2831ae9aada2c6efbd715d",
+                "reference": "e4df00b9b3571187db2831ae9aada2c6efbd715d",
                 "shasum": ""
             },
             "require": {
@@ -1244,7 +1498,7 @@
             ],
             "support": {
                 "issues": "https://github.com/sebastianbergmann/comparator/issues",
-                "source": "https://github.com/sebastianbergmann/comparator/tree/4.0.9"
+                "source": "https://github.com/sebastianbergmann/comparator/tree/4.0.10"
             },
             "funding": [
                 {
@@ -1264,7 +1518,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-08-10T06:51:50+00:00"
+            "time": "2026-01-24T09:22:56+00:00"
         },
         {
             "name": "sebastian/complexity",
@@ -2284,13 +2538,18 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
-    "stability-flags": {},
-    "prefer-stable": false,
+    "minimum-stability": "dev",
+    "stability-flags": {
+        "automattic/wordbless": 20
+    },
+    "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": ">=7.4"
     },
     "platform-dev": {},
+    "platform-overrides": {
+        "php": "7.4.0"
+    },
     "plugin-api-version": "2.9.0"
 }

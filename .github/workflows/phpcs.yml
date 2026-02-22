@@ -1,0 +1,31 @@
+name: Coding Standards
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+
+jobs:
+  phpcs:
+    name: PHPCS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: cs2pr
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run PHPCS
+        run: composer phpcs -- --report-full --report-checkstyle | cs2pr

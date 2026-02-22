@@ -1,6 +1,7 @@
 # Dependencies
 vendor/
 node_modules/
+wordpress/
 
 # Build artifacts
 dist/
@@ -11,6 +12,9 @@ dist/
 *.swp
 *.swo
 .DS_Store
+
+# Tests
+.phpunit.result.cache
 
 # wp-env
 .wp-env.override.json
