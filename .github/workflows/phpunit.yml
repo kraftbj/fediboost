@@ -1,0 +1,58 @@
+name: PHPUnit Tests
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }} / WP ${{ matrix.wp }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        wp: ['6.9', 'latest']
+        include:
+          - php: '8.4'
+            wp: 'trunk'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: openssl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: |
+          if composer check-platform-reqs --lock 2>/dev/null; then
+            composer install --no-interaction --prefer-dist
+          else
+            composer update --no-interaction --prefer-dist
+          fi
+
+      - name: Use WordPress trunk (nightly)
+        if: matrix.wp == 'trunk'
+        run: |
+          rm -rf wordpress
+          curl -sL https://wordpress.org/nightly-builds/wordpress-latest.zip -o /tmp/wp-nightly.zip
+          unzip -qo /tmp/wp-nightly.zip -d .
+          mkdir -p wordpress/wp-content/themes
+          cp vendor/automattic/wordbless/src/dbless-wpdb.php wordpress/wp-content/db.php
+
+      - name: Use WordPress ${{ matrix.wp }}
+        if: matrix.wp != 'latest' && matrix.wp != 'trunk'
+        run: composer require "roots/wordpress:${{ matrix.wp }}.*" --no-interaction
+
+      - name: Run PHPUnit
+        run: composer test
