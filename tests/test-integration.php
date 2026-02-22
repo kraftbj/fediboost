@@ -30,7 +30,7 @@ class Test_Integration extends WP_UnitTestCase {
 		// Clear accounts and scheduled events before each test.
 		update_option( 'fediboost_accounts', array() );
 		update_option( 'fediboost_instance_apps', array() );
-		wp_clear_scheduled_hook( 'fediboost_boost_post' );
+		wp_unschedule_hook( 'fediboost_boost_post' );
 	}
 
 	/**
@@ -39,7 +39,7 @@ class Test_Integration extends WP_UnitTestCase {
 	public function tear_down() {
 		update_option( 'fediboost_accounts', array() );
 		update_option( 'fediboost_instance_apps', array() );
-		wp_clear_scheduled_hook( 'fediboost_boost_post' );
+		wp_unschedule_hook( 'fediboost_boost_post' );
 		parent::tear_down();
 	}
 
