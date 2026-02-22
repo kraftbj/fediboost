@@ -64,9 +64,11 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 
 		// Ensure the admin_menu hook is registered. The singleton may already
 		// exist from an earlier test suite, with its hooks removed by the test
-		// framework's global state restoration, so re-add explicitly.
+		// framework's global state restoration, so re-add explicitly if needed.
 		$admin = FediBoost\Admin::get_instance();
-		add_action( 'admin_menu', array( $admin, 'register_admin_menu' ) );
+		if ( ! has_action( 'admin_menu', array( $admin, 'register_admin_menu' ) ) ) {
+			add_action( 'admin_menu', array( $admin, 'register_admin_menu' ) );
+		}
 
 		global $submenu;
 		$submenu = array();
