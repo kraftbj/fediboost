@@ -29,12 +29,7 @@
 		"build": [
 			"@clean",
 			"mkdir -p dist/fediboost",
-			"cp fediboost.php dist/fediboost/",
-			"cp index.php dist/fediboost/",
-			"cp readme.txt dist/fediboost/",
-			"cp uninstall.php dist/fediboost/",
-			"cp -r includes dist/fediboost/",
-			"cp -r admin dist/fediboost/"
+			"rsync -av --exclude-from=.distignore ./ dist/fediboost/"
 		],
 		"zip": [
 			"@build",
