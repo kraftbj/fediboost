@@ -134,7 +134,7 @@ function fediboost_activate() {
  */
 function fediboost_deactivate() {
 	// Clear all scheduled boost events.
-	wp_clear_scheduled_hook( 'fediboost_boost_post' );
+	wp_unschedule_hook( 'fediboost_boost_post' );
 
 	// Remove the ActivityPub notice flag.
 	delete_option( 'fediboost_show_activitypub_notice' );

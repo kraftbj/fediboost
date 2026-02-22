@@ -164,10 +164,13 @@ class Test_OAuth_Flow extends WP_UnitTestCase {
 			'created_at'    => time(),
 		);
 
-		// Store credentials manually to simulate caching.
-		$apps              = array();
-		$hostname          = wp_parse_url( $instance_url, PHP_URL_HOST );
-		$apps[ $hostname ] = $credentials;
+		// Store credentials with encrypted client_secret (matching cache_app_credentials behavior).
+		$encryption              = Encryption::get_instance();
+		$apps                    = array();
+		$hostname                = wp_parse_url( $instance_url, PHP_URL_HOST );
+		$stored                  = $credentials;
+		$stored['client_secret'] = $encryption->encrypt( $credentials['client_secret'] );
+		$apps[ $hostname ]       = $stored;
 		update_option( 'fediboost_instance_apps', $apps );
 
 		// Verify we can retrieve cached credentials.
