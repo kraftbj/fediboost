@@ -83,7 +83,7 @@ Build the distribution zip:
 composer zip
 ```
 
-This cleans `dist/`, copies only distribution files into `dist/fediboost/`, and creates `fediboost.zip` in the project root. The `.distignore` file lists everything excluded from the distribution (tests, dev config, audit docs, build tools, etc.).
+This cleans `dist/`, copies only the allowlisted distribution files into `dist/fediboost/`, and creates `fediboost.zip` in the project root. The set of copied files is defined in the Composer `build`/`zip` scripts and does not read `.distignore`. The `.distignore` file is used by the 10up deploy action and should be kept in sync with the Composer packaging rules to avoid drift.
 
 Release tags use bare version numbers without a `v` prefix (e.g., `0.1.0`, not `v0.1.0`). The deploy workflow expects this format.
 
