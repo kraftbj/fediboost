@@ -15,14 +15,14 @@ class Test_Plugin_Foundation extends WP_UnitTestCase {
 	 */
 	public function set_up() {
 		parent::set_up();
-		wp_clear_scheduled_hook( 'fediboost_boost_post' );
+		wp_unschedule_hook( 'fediboost_boost_post' );
 	}
 
 	/**
 	 * Tear down test fixtures.
 	 */
 	public function tear_down() {
-		wp_clear_scheduled_hook( 'fediboost_boost_post' );
+		wp_unschedule_hook( 'fediboost_boost_post' );
 		parent::tear_down();
 	}
 
