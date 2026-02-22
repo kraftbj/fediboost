@@ -21,3 +21,6 @@ require_once dirname( __DIR__ ) . '/fediboost.php';
 
 // Manually initialize since plugins_loaded has already fired.
 fediboost_init();
+
+// Load the base test case class.
+require_once __DIR__ . '/class-fediboost-testcase.php';

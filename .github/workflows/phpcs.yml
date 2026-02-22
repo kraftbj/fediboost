@@ -20,7 +20,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 'latest'
+          php-version: '8.4'
           coverage: none
           tools: cs2pr
 
