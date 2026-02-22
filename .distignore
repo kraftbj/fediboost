@@ -1,6 +1,7 @@
 # Development files
 .wp-env.json
 .wordpress-org/
+.git
 .git/
 .github/
 .gitignore
@@ -8,6 +9,7 @@
 
 # AI/IDE directories
 .claude/
+.context/
 .idea/
 CLAUDE.md
 
