@@ -10,8 +10,17 @@
 		"phpunit/phpunit": "^9.0",
 		"wp-coding-standards/wpcs": "^3.0",
 		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
-		"yoast/phpunit-polyfills": "^2.0"
+		"yoast/phpunit-polyfills": "^2.0",
+		"automattic/wordbless": "dev-allow-wp-7.0"
 	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/Automattic/wordbless.git"
+		}
+	],
+	"minimum-stability": "dev",
+	"prefer-stable": true,
 	"scripts": {
 		"test": "phpunit",
 		"phpcs": "phpcs",
@@ -32,11 +41,17 @@
 			"cd dist && zip -r ../fediboost.zip fediboost",
 			"@post-zip"
 		],
-		"post-zip": "echo '\\n✅ Created fediboost.zip (ready for WordPress upload)'"
+		"post-zip": "echo '\\n✅ Created fediboost.zip (ready for WordPress upload)'",
+		"post-install-cmd": "WorDBless\\Composer\\InstallDropin::copy",
+		"post-update-cmd": "WorDBless\\Composer\\InstallDropin::copy"
 	},
 	"config": {
+		"platform": {
+			"php": "7.4.0"
+		},
 		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"roots/wordpress-core-installer": true
 		}
 	}
 }
