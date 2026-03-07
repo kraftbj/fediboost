@@ -61,6 +61,7 @@ delete_option( 'fediboost_accounts' );
 delete_option( 'fediboost_instance_apps' );
 delete_option( 'fediboost_activated' );
 delete_option( 'fediboost_show_activitypub_notice' );
+delete_option( 'fediboost_post_types' );
 
 // Clean up transients with plugin prefixes.
 global $wpdb;

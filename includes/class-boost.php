@@ -129,6 +129,22 @@ class Boost {
 			return;
 		}
 
+		// Check if the post type is in the allowed list.
+		$allowed_post_types = get_option( 'fediboost_post_types' );
+		if ( false === $allowed_post_types ) {
+			$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+		}
+		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+			$this->log_info(
+				'Post type not eligible for boost',
+				array(
+					'post_id'   => $post_id,
+					'post_type' => $post->post_type,
+				)
+			);
+			return;
+		}
+
 		// Check if post is eligible for boosting via ActivityPub.
 		$activitypub = ActivityPub::get_instance();
 		if ( ! $activitypub->is_post_eligible( $post ) ) {

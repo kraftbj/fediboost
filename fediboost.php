@@ -119,6 +119,11 @@ function fediboost_activate() {
 		update_option( 'fediboost_instance_apps', array(), false );
 	}
 
+	// Initialize post types with ActivityPub defaults if not already set.
+	if ( false === get_option( 'fediboost_post_types' ) ) {
+		update_option( 'fediboost_post_types', get_option( 'activitypub_support_post_types', array( 'post' ) ), false );
+	}
+
 	// Check ActivityPub dependency - set a flag to show notice on next admin load.
 	if ( ! fediboost_is_activitypub_active() ) {
 		update_option( 'fediboost_show_activitypub_notice', '1', false );

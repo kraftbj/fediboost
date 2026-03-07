@@ -117,7 +117,36 @@ class Admin {
 			)
 		);
 
-		// Add main settings section.
+		// Register post types setting.
+		register_setting(
+			'fediboost_settings',
+			'fediboost_post_types',
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_post_types' ),
+				'default'           => array(),
+				'autoload'          => false,
+			)
+		);
+
+		// Add General settings section (renders above Connected Accounts).
+		add_settings_section(
+			'fediboost_general_section',
+			__( 'Post Types', 'fediboost' ),
+			array( $this, 'render_general_section' ),
+			'fediboost'
+		);
+
+		// Add post types checkbox field to the General section.
+		add_settings_field(
+			'fediboost_post_types_field',
+			__( 'Boost Post Types', 'fediboost' ),
+			array( $this, 'render_post_types_field' ),
+			'fediboost',
+			'fediboost_general_section'
+		);
+
+		// Add accounts settings section.
 		add_settings_section(
 			'fediboost_accounts_section',
 			__( 'Connected Mastodon Accounts', 'fediboost' ),
@@ -175,6 +204,93 @@ class Admin {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Sanitize post types option.
+	 *
+	 * Validates each post type slug against registered post types and the
+	 * ActivityPub plugin's enabled post types. Invalid or non-ActivityPub
+	 * post type slugs are discarded.
+	 *
+	 * @since 1.0.3
+	 *
+	 * @param mixed $post_types The post types value to sanitize.
+	 * @return array Sanitized array of post type slugs.
+	 */
+	public function sanitize_post_types( $post_types ) {
+		if ( ! is_array( $post_types ) ) {
+			return array();
+		}
+
+		$activitypub_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+		$sanitized         = array();
+
+		foreach ( $post_types as $slug ) {
+			$slug = sanitize_key( $slug );
+
+			if ( ! post_type_exists( $slug ) ) {
+				continue;
+			}
+
+			if ( ! in_array( $slug, $activitypub_types, true ) ) {
+				continue;
+			}
+
+			$sanitized[] = $slug;
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Render General section description.
+	 *
+	 * @since 1.0.3
+	 */
+	public function render_general_section() {
+		echo '<p>' . esc_html__( 'Select which post types should be automatically boosted when published.', 'fediboost' ) . '</p>';
+	}
+
+	/**
+	 * Render the post types checkbox field.
+	 *
+	 * Displays a checkbox for each post type enabled in the ActivityPub plugin.
+	 * If ActivityPub is inactive or has no post types configured, displays an
+	 * informational notice instead.
+	 *
+	 * @since 1.0.3
+	 */
+	public function render_post_types_field() {
+		$activitypub_types = get_option( 'activitypub_support_post_types', array() );
+
+		if ( empty( $activitypub_types ) ) {
+			echo '<p class="description">';
+			esc_html_e( 'No post types are currently enabled in the ActivityPub plugin. Please configure post types in the ActivityPub settings first.', 'fediboost' );
+			echo '</p>';
+			return;
+		}
+
+		$saved_types = get_option( 'fediboost_post_types', array() );
+
+		foreach ( $activitypub_types as $post_type_slug ) {
+			$post_type_obj = get_post_type_object( $post_type_slug );
+
+			if ( ! $post_type_obj ) {
+				continue;
+			}
+
+			$checked = in_array( $post_type_slug, $saved_types, true ) ? 'checked="checked"' : '';
+			$id      = 'fediboost_post_type_' . esc_attr( $post_type_slug );
+
+			printf(
+				'<label for="%1$s"><input type="checkbox" id="%1$s" name="fediboost_post_types[]" value="%2$s" %3$s /> %4$s</label><br />',
+				esc_attr( $id ),
+				esc_attr( $post_type_slug ),
+				$checked, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static checked attribute.
+				esc_html( $post_type_obj->labels->name )
+			);
+		}
 	}
 
 	/**
@@ -681,6 +797,17 @@ class Admin {
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
 			<?php $this->render_dependency_status(); ?>
+
+			<h2><?php esc_html_e( 'General', 'fediboost' ); ?></h2>
+			<form method="post" action="options.php">
+				<?php
+				settings_fields( 'fediboost_settings' );
+				do_settings_sections( 'fediboost' );
+				submit_button( __( 'Save Settings', 'fediboost' ) );
+				?>
+			</form>
+
+			<hr />
 
 			<h2><?php esc_html_e( 'Connected Accounts', 'fediboost' ); ?></h2>
 
