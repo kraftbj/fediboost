@@ -190,7 +190,17 @@ class Boost {
 			return;
 		}
 
-		set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
+		$transient_set = set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
+
+		if ( ! $transient_set ) {
+			$this->log_error(
+				'Failed to store pending boost transient; federation-complete hook will not fire for this post',
+				array(
+					'post_id'         => $post_id,
+					'activitypub_url' => $activitypub_url,
+				)
+			);
+		}
 
 		// Schedule a fallback boost in case the ActivityPub federation hook doesn't fire.
 		$this->schedule_fallback_boost( $post_id );

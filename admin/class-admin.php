@@ -117,14 +117,14 @@ class Admin {
 			)
 		);
 
-		// Register post types setting.
+		// Register post types setting under its own group so submitting the
+		// post types form does not trigger sanitize_accounts with empty input.
 		register_setting(
-			'fediboost_settings',
+			'fediboost_post_types_settings',
 			'fediboost_post_types',
 			array(
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_post_types' ),
-				'default'           => array(),
 				'autoload'          => false,
 			)
 		);
@@ -803,7 +803,7 @@ class Admin {
 			<h2><?php esc_html_e( 'General', 'fediboost' ); ?></h2>
 			<form method="post" action="options.php">
 				<?php
-				settings_fields( 'fediboost_settings' );
+				settings_fields( 'fediboost_post_types_settings' );
 				do_settings_sections( 'fediboost_general' );
 				submit_button( __( 'Save Settings', 'fediboost' ) );
 				?>
