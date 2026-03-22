@@ -129,12 +129,13 @@ class Admin {
 			)
 		);
 
-		// Add General settings section (renders above Connected Accounts).
+		// Add post types settings section on its own page slug to keep it
+		// separate from the accounts section rendered below the form.
 		add_settings_section(
 			'fediboost_general_section',
 			__( 'Post Types', 'fediboost' ),
 			array( $this, 'render_general_section' ),
-			'fediboost'
+			'fediboost_general'
 		);
 
 		// Add post types checkbox field to the General section.
@@ -142,16 +143,8 @@ class Admin {
 			'fediboost_post_types_field',
 			__( 'Boost Post Types', 'fediboost' ),
 			array( $this, 'render_post_types_field' ),
-			'fediboost',
+			'fediboost_general',
 			'fediboost_general_section'
-		);
-
-		// Add accounts settings section.
-		add_settings_section(
-			'fediboost_accounts_section',
-			__( 'Connected Mastodon Accounts', 'fediboost' ),
-			array( $this, 'render_accounts_section' ),
-			'fediboost'
 		);
 	}
 
@@ -213,7 +206,7 @@ class Admin {
 	 * ActivityPub plugin's enabled post types. Invalid or non-ActivityPub
 	 * post type slugs are discarded.
 	 *
-	 * @since 1.0.3
+	 * @since 1.0.2
 	 *
 	 * @param mixed $post_types The post types value to sanitize.
 	 * @return array Sanitized array of post type slugs.
@@ -223,7 +216,7 @@ class Admin {
 			return array();
 		}
 
-		$activitypub_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+		$activitypub_types = get_option( 'activitypub_support_post_types', array() );
 		$sanitized         = array();
 
 		foreach ( $post_types as $slug ) {
@@ -246,7 +239,7 @@ class Admin {
 	/**
 	 * Render General section description.
 	 *
-	 * @since 1.0.3
+	 * @since 1.0.2
 	 */
 	public function render_general_section() {
 		echo '<p>' . esc_html__( 'Select which post types should be automatically boosted when published.', 'fediboost' ) . '</p>';
@@ -259,7 +252,7 @@ class Admin {
 	 * If ActivityPub is inactive or has no post types configured, displays an
 	 * informational notice instead.
 	 *
-	 * @since 1.0.3
+	 * @since 1.0.2
 	 */
 	public function render_post_types_field() {
 		$activitypub_types = get_option( 'activitypub_support_post_types', array() );
@@ -802,7 +795,7 @@ class Admin {
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( 'fediboost_settings' );
-				do_settings_sections( 'fediboost' );
+				do_settings_sections( 'fediboost_general' );
 				submit_button( __( 'Save Settings', 'fediboost' ) );
 				?>
 			</form>

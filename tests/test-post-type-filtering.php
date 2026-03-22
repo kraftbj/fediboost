@@ -185,10 +185,10 @@ class Test_Post_Type_Filtering extends FediBoost_TestCase {
 		// Trigger register_settings which runs on admin_init.
 		$this->admin->register_settings();
 
-		// Verify the General section is registered on the fediboost page.
-		$this->assertArrayHasKey( 'fediboost', $wp_settings_sections );
-		$this->assertArrayHasKey( 'fediboost_general_section', $wp_settings_sections['fediboost'] );
-		$this->assertSame( 'Post Types', $wp_settings_sections['fediboost']['fediboost_general_section']['title'] );
+		// Verify the General section is registered on its own page slug.
+		$this->assertArrayHasKey( 'fediboost_general', $wp_settings_sections );
+		$this->assertArrayHasKey( 'fediboost_general_section', $wp_settings_sections['fediboost_general'] );
+		$this->assertSame( 'Post Types', $wp_settings_sections['fediboost_general']['fediboost_general_section']['title'] );
 	}
 
 	/**

@@ -34,7 +34,7 @@ class Boost {
 	const CRON_HOOK = 'fediboost_boost_post';
 
 	/**
-	 * Boost delay in seconds after ActivityPub federation completes.
+	 * Default delay in seconds before executing a boost.
 	 *
 	 * @since 1.0.0
 	 *
@@ -45,7 +45,7 @@ class Boost {
 	/**
 	 * Fallback delay in seconds when the ActivityPub federation hook does not fire.
 	 *
-	 * @since 1.0.1
+	 * @since 1.0.2
 	 *
 	 * @var int
 	 */
@@ -129,10 +129,18 @@ class Boost {
 			return;
 		}
 
-		// Check if the post type is in the allowed list.
+		// Check post type eligibility, falling back to ActivityPub defaults if
+		// no FediBoost preference is saved (e.g., first run before visiting settings).
 		$allowed_post_types = get_option( 'fediboost_post_types' );
 		if ( false === $allowed_post_types ) {
-			$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+			$allowed_post_types = get_option( 'activitypub_support_post_types', array() );
+			$this->log_info(
+				'fediboost_post_types option not set, falling back to ActivityPub defaults',
+				array(
+					'post_id'        => $post_id,
+					'fallback_types' => $allowed_post_types,
+				)
+			);
 		}
 		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
 			$this->log_info(
@@ -191,11 +199,11 @@ class Boost {
 	/**
 	 * Handle ActivityPub federation completion.
 	 *
-	 * Fires after the ActivityPub plugin has finished sending a post to all follower
-	 * inboxes. Cancels the fallback boost and reschedules the boost relative to
+	 * Fires after the ActivityPub plugin has finished processing the outbox for a
+	 * post. Cancels the fallback boost and reschedules the boost relative to
 	 * federation completion rather than post publish time.
 	 *
-	 * @since 1.0.1
+	 * @since 1.0.2
 	 *
 	 * @param array  $inboxes         Target inbox URLs.
 	 * @param string $json            The ActivityPub Activity JSON.
@@ -318,10 +326,10 @@ class Boost {
 	 * does not fire (e.g., older ActivityPub plugin version). If the federation hook
 	 * fires first, it will cancel this fallback and reschedule with the normal delay.
 	 *
-	 * @since 1.0.1
+	 * @since 1.0.2
 	 *
 	 * @param int $post_id The post ID to boost.
-	 * @return bool True if scheduled, false on failure.
+	 * @return bool True if scheduled, false if already scheduled or on failure.
 	 */
 	public function schedule_fallback_boost( $post_id ) {
 		// Check if already scheduled (prevent duplicates).
@@ -334,7 +342,7 @@ class Boost {
 		 * Filters the fallback delay in seconds before a boost is executed when the
 		 * ActivityPub federation completion hook does not fire.
 		 *
-		 * @since 1.0.1
+		 * @since 1.0.2
 		 *
 		 * @param int $delay Fallback delay in seconds. Default 300 (5 minutes).
 		 */
@@ -363,7 +371,7 @@ class Boost {
 	/**
 	 * Unschedule a pending boost for a post.
 	 *
-	 * @since 1.0.1
+	 * @since 1.0.2
 	 *
 	 * @param int $post_id The post ID.
 	 */
