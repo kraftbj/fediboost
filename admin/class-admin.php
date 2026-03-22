@@ -227,6 +227,15 @@ class Admin {
 			}
 
 			if ( ! in_array( $slug, $activitypub_types, true ) ) {
+				$post_type_obj = get_post_type_object( $slug );
+				$label         = $post_type_obj ? $post_type_obj->labels->name : $slug;
+				add_settings_error(
+					'fediboost_post_types',
+					'fediboost_post_type_not_in_activitypub',
+					/* translators: %s: post type label */
+					sprintf( __( '"%s" was removed because it is no longer enabled in ActivityPub.', 'fediboost' ), $label ),
+					'warning'
+				);
 				continue;
 			}
 

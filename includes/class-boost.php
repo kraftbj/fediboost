@@ -219,6 +219,7 @@ class Boost {
 			$activity = json_decode( $json, true );
 
 			if ( ! is_array( $activity ) ) {
+				$this->log_info( 'Could not parse activity JSON for type detection', array( 'outbox_item_id' => $outbox_item_id ) );
 				return;
 			}
 
@@ -239,14 +240,20 @@ class Boost {
 			}
 
 			if ( ! is_array( $activity ) ) {
+				$this->log_info( 'Could not parse activity JSON for object ID', array( 'outbox_item_id' => $outbox_item_id ) );
 				return;
 			}
 
-			$object    = isset( $activity['object'] ) ? $activity['object'] : array();
-			$object_id = isset( $object['id'] ) ? $object['id'] : '';
+			$object = isset( $activity['object'] ) ? $activity['object'] : array();
+			if ( is_string( $object ) ) {
+				$object_id = $object;
+			} else {
+				$object_id = isset( $object['id'] ) ? $object['id'] : '';
+			}
 		}
 
 		if ( empty( $object_id ) ) {
+			$this->log_info( 'Could not determine object ID from outbox item', array( 'outbox_item_id' => $outbox_item_id ) );
 			return;
 		}
 
@@ -269,8 +276,11 @@ class Boost {
 		// Clean up the pending transient.
 		delete_transient( $transient_key );
 
-		// Cancel the fallback boost.
-		$this->unschedule_boost( $post_id );
+		// Cancel the fallback boost. If unscheduling fails, the fallback is still
+		// pending so we must not schedule a duplicate.
+		if ( ! $this->unschedule_boost( $post_id ) ) {
+			return;
+		}
 
 		// Schedule the boost for the configured delay after federation completes.
 		$this->schedule_boost( $post_id );
@@ -374,14 +384,27 @@ class Boost {
 	 * @since 1.0.2
 	 *
 	 * @param int $post_id The post ID.
+	 * @return bool True if unscheduled or nothing was scheduled, false on failure.
 	 */
 	private function unschedule_boost( $post_id ) {
 		$timestamp = wp_next_scheduled( self::CRON_HOOK, array( $post_id ) );
 
 		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK, array( $post_id ) );
+			$result = wp_unschedule_event( $timestamp, self::CRON_HOOK, array( $post_id ) );
+			if ( false === $result ) {
+				$this->log_error(
+					'Failed to unschedule previous boost',
+					array(
+						'post_id'   => $post_id,
+						'timestamp' => $timestamp,
+					)
+				);
+				return false;
+			}
 			$this->log_info( 'Cancelled previous boost schedule', array( 'post_id' => $post_id ) );
 		}
+
+		return true;
 	}
 
 	/**
