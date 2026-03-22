@@ -282,14 +282,13 @@ class Admin {
 				continue;
 			}
 
-			$checked = in_array( $post_type_slug, $saved_types, true ) ? 'checked="checked"' : '';
-			$id      = 'fediboost_post_type_' . esc_attr( $post_type_slug );
+			$id = 'fediboost_post_type_' . esc_attr( $post_type_slug );
 
 			printf(
 				'<label for="%1$s"><input type="checkbox" id="%1$s" name="fediboost_post_types[]" value="%2$s" %3$s /> %4$s</label><br />',
 				esc_attr( $id ),
 				esc_attr( $post_type_slug ),
-				$checked, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static checked attribute.
+				checked( in_array( $post_type_slug, $saved_types, true ), true, false ),
 				esc_html( $post_type_obj->labels->name )
 			);
 		}

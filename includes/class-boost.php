@@ -221,45 +221,36 @@ class Boost {
 	 * @param int    $outbox_item_id  The outbox item post ID.
 	 */
 	public function on_federation_complete( $inboxes, $json, $actor_id, $outbox_item_id ) {
-		// Only process Create activities (new posts, not updates or deletes).
-		$type = get_post_meta( $outbox_item_id, '_activitypub_activity_type', true );
+		// Read activity type and object ID from outbox post meta first.
+		$type      = get_post_meta( $outbox_item_id, '_activitypub_activity_type', true );
+		$object_id = get_post_meta( $outbox_item_id, '_activitypub_object_id', true );
 
-		if ( ! $type ) {
-			// Fall back to parsing the activity JSON if meta is unavailable.
+		// Fall back to parsing the activity JSON when either value is missing.
+		if ( ! $type || empty( $object_id ) ) {
 			$activity = json_decode( $json, true );
 
 			if ( ! is_array( $activity ) ) {
-				$this->log_info( 'Could not parse activity JSON for type detection', array( 'outbox_item_id' => $outbox_item_id ) );
+				$this->log_info( 'Could not parse activity JSON', array( 'outbox_item_id' => $outbox_item_id ) );
 				return;
 			}
 
-			$type = isset( $activity['type'] ) ? $activity['type'] : '';
+			if ( ! $type ) {
+				$type = isset( $activity['type'] ) ? $activity['type'] : '';
+			}
+
+			if ( empty( $object_id ) ) {
+				$object = isset( $activity['object'] ) ? $activity['object'] : array();
+				if ( is_string( $object ) ) {
+					$object_id = $object;
+				} else {
+					$object_id = isset( $object['id'] ) ? $object['id'] : '';
+				}
+			}
 		}
 
+		// Only process Create activities (new posts, not updates or deletes).
 		if ( 'Create' !== $type ) {
 			return;
-		}
-
-		// Get the ActivityPub object URL from outbox item meta.
-		$object_id = get_post_meta( $outbox_item_id, '_activitypub_object_id', true );
-
-		if ( empty( $object_id ) ) {
-			// Fall back to parsing the activity JSON.
-			if ( ! isset( $activity ) ) {
-				$activity = json_decode( $json, true );
-			}
-
-			if ( ! is_array( $activity ) ) {
-				$this->log_info( 'Could not parse activity JSON for object ID', array( 'outbox_item_id' => $outbox_item_id ) );
-				return;
-			}
-
-			$object = isset( $activity['object'] ) ? $activity['object'] : array();
-			if ( is_string( $object ) ) {
-				$object_id = $object;
-			} else {
-				$object_id = isset( $object['id'] ) ? $object['id'] : '';
-			}
 		}
 
 		if ( empty( $object_id ) ) {
