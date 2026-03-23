@@ -125,15 +125,6 @@ class Test_Post_Type_Filtering extends FediBoost_TestCase {
 
 		$post = get_post( $post_id );
 
-		// Enable debug logging to capture log messages.
-		$log_messages = array();
-		add_filter(
-			'pre_option_fediboost_post_types',
-			function () {
-				return array( 'post' );
-			}
-		);
-
 		// Call on_post_publish -- it should NOT return early due to post type filtering.
 		// It will return at the ActivityPub eligibility check instead.
 		$this->boost->on_post_publish( $post_id, $post, false, null );
