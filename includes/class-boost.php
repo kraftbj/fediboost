@@ -364,7 +364,7 @@ class Boost {
 		 * Filters the fallback delay in seconds before a boost is executed when the
 		 * ActivityPub federation completion hook does not fire.
 		 *
-		 * @since 1.1.0
+		 * @since 1.0.1
 		 *
 		 * @param int $delay Fallback delay in seconds. Default 300 (5 minutes).
 		 */

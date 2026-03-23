@@ -286,7 +286,11 @@ class Admin {
 			// Option not set yet — default to all ActivityPub-enabled types for UI
 			// consistency with the runtime fallback in on_post_publish().
 			$saved_types = $activitypub_types;
-		} elseif ( empty( $saved_types ) ) {
+		} elseif ( ! is_array( $saved_types ) ) {
+			$saved_types = array();
+		}
+
+		if ( empty( $saved_types ) && false !== get_option( 'fediboost_post_types' ) ) {
 			echo '<div class="notice notice-warning inline"><p>';
 			esc_html_e( 'No post types are selected. No posts will be automatically boosted until at least one post type is enabled.', 'fediboost' );
 			echo '</p></div>';
