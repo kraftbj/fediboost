@@ -206,7 +206,7 @@ class Admin {
 	 * ActivityPub plugin's enabled post types. Invalid or non-ActivityPub
 	 * post type slugs are discarded.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 *
 	 * @param mixed $post_types The post types value to sanitize.
 	 * @return array Sanitized array of post type slugs.
@@ -248,7 +248,7 @@ class Admin {
 	/**
 	 * Render General section description.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 */
 	public function render_general_section() {
 		echo '<p>' . esc_html__( 'Select which post types should be automatically boosted when published.', 'fediboost' ) . '</p>';
@@ -261,7 +261,7 @@ class Admin {
 	 * If ActivityPub is inactive or has no post types configured, displays an
 	 * informational notice instead.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 */
 	public function render_post_types_field() {
 		$activitypub_types = get_option( 'activitypub_support_post_types', array() );
@@ -274,6 +274,12 @@ class Admin {
 		}
 
 		$saved_types = get_option( 'fediboost_post_types', array() );
+
+		if ( empty( $saved_types ) && false !== get_option( 'fediboost_post_types' ) ) {
+			echo '<div class="notice notice-warning inline"><p>';
+			esc_html_e( 'No post types are selected. No posts will be automatically boosted until at least one post type is enabled.', 'fediboost' );
+			echo '</p></div>';
+		}
 
 		foreach ( $activitypub_types as $post_type_slug ) {
 			$post_type_obj = get_post_type_object( $post_type_slug );

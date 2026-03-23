@@ -373,7 +373,7 @@ class Test_Boost_Functionality extends FediBoost_TestCase {
 	 * _activitypub_object_id meta are not set, so the method parses the
 	 * JSON body to determine the activity type and object ID.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 */
 	public function test_on_federation_complete_json_fallback() {
 		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
@@ -418,7 +418,7 @@ class Test_Boost_Functionality extends FediBoost_TestCase {
 	 * Per the ActivityPub spec, the object field can be a bare string URL
 	 * instead of a nested object with an id field.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 */
 	public function test_on_federation_complete_json_string_object() {
 		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
@@ -455,7 +455,7 @@ class Test_Boost_Functionality extends FediBoost_TestCase {
 	/**
 	 * Test on_federation_complete handles malformed JSON gracefully.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 */
 	public function test_on_federation_complete_malformed_json() {
 		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );

@@ -45,7 +45,7 @@ class Boost {
 	/**
 	 * Fallback delay in seconds when the ActivityPub federation hook does not fire.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 *
 	 * @var int
 	 */
@@ -213,7 +213,7 @@ class Boost {
 	 * post. Cancels the fallback boost and reschedules the boost relative to
 	 * federation completion rather than post publish time.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 *
 	 * @param array  $inboxes         Target inbox URLs.
 	 * @param string $json            The ActivityPub Activity JSON.
@@ -337,7 +337,7 @@ class Boost {
 	 * does not fire (e.g., older ActivityPub plugin version). If the federation hook
 	 * fires first, it will cancel this fallback and reschedule with the normal delay.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 *
 	 * @param int $post_id The post ID to boost.
 	 * @return bool True if scheduled, false if already scheduled or on failure.
@@ -353,7 +353,7 @@ class Boost {
 		 * Filters the fallback delay in seconds before a boost is executed when the
 		 * ActivityPub federation completion hook does not fire.
 		 *
-		 * @since 1.0.2
+		 * @since 1.1.0
 		 *
 		 * @param int $delay Fallback delay in seconds. Default 300 (5 minutes).
 		 */
@@ -382,7 +382,7 @@ class Boost {
 	/**
 	 * Unschedule a pending boost for a post.
 	 *
-	 * @since 1.0.2
+	 * @since 1.1.0
 	 *
 	 * @param int $post_id The post ID.
 	 * @return bool True if unscheduled or nothing was scheduled, false on failure.
