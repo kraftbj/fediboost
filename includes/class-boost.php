@@ -107,7 +107,7 @@ class Boost {
 	/**
 	 * Handle post publish event.
 	 *
-	 * Marks the post as pending boost and schedules a fallback. The primary boost
+	 * Stores a pending-boost transient for the post and schedules a fallback. The primary boost
 	 * scheduling happens in on_federation_complete() after ActivityPub has finished
 	 * federating the post.
 	 *
@@ -143,6 +143,13 @@ class Boost {
 			);
 		}
 		if ( ! is_array( $allowed_post_types ) ) {
+			$this->log_error(
+				'fediboost_post_types option has unexpected type, treating as empty',
+				array(
+					'post_id' => $post_id,
+					'type'    => gettype( $allowed_post_types ),
+				)
+			);
 			$allowed_post_types = array();
 		}
 		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
@@ -234,7 +241,7 @@ class Boost {
 			$activity = json_decode( $json, true );
 
 			if ( ! is_array( $activity ) ) {
-				$this->log_info( 'Could not parse activity JSON', array( 'outbox_item_id' => $outbox_item_id ) );
+				$this->log_error( 'Could not parse activity JSON', array( 'outbox_item_id' => $outbox_item_id ) );
 				return;
 			}
 
