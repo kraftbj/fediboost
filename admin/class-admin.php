@@ -223,6 +223,13 @@ class Admin {
 			$slug = sanitize_key( $slug );
 
 			if ( ! post_type_exists( $slug ) ) {
+				add_settings_error(
+					'fediboost_post_types',
+					'fediboost_post_type_not_registered',
+					/* translators: %s: post type slug */
+					sprintf( __( '"%s" was removed because it is no longer a registered post type.', 'fediboost' ), $slug ),
+					'warning'
+				);
 				continue;
 			}
 
@@ -273,9 +280,13 @@ class Admin {
 			return;
 		}
 
-		$saved_types = get_option( 'fediboost_post_types', array() );
+		$saved_types = get_option( 'fediboost_post_types', false );
 
-		if ( empty( $saved_types ) && false !== get_option( 'fediboost_post_types' ) ) {
+		if ( false === $saved_types ) {
+			// Option not set yet — default to all ActivityPub-enabled types for UI
+			// consistency with the runtime fallback in on_post_publish().
+			$saved_types = $activitypub_types;
+		} elseif ( empty( $saved_types ) ) {
 			echo '<div class="notice notice-warning inline"><p>';
 			esc_html_e( 'No post types are selected. No posts will be automatically boosted until at least one post type is enabled.', 'fediboost' );
 			echo '</p></div>';
@@ -298,15 +309,6 @@ class Admin {
 				esc_html( $post_type_obj->labels->name )
 			);
 		}
-	}
-
-	/**
-	 * Render accounts section description.
-	 *
-	 * @since 1.0.0
-	 */
-	public function render_accounts_section() {
-		echo '<p>' . esc_html__( 'Manage your connected Mastodon accounts. When you publish a post, it will automatically be boosted on all connected accounts.', 'fediboost' ) . '</p>';
 	}
 
 	/**
@@ -804,6 +806,8 @@ class Admin {
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
 			<?php $this->render_dependency_status(); ?>
+
+			<?php settings_errors( 'fediboost_post_types' ); ?>
 
 			<h2><?php esc_html_e( 'General', 'fediboost' ); ?></h2>
 			<form method="post" action="options.php">

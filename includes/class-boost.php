@@ -45,7 +45,7 @@ class Boost {
 	/**
 	 * Fallback delay in seconds when the ActivityPub federation hook does not fire.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
 	 *
 	 * @var int
 	 */
@@ -142,6 +142,9 @@ class Boost {
 				)
 			);
 		}
+		if ( ! is_array( $allowed_post_types ) ) {
+			$allowed_post_types = array();
+		}
 		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
 			$this->log_info(
 				'Post type not eligible for boost',
@@ -194,7 +197,7 @@ class Boost {
 
 		if ( ! $transient_set ) {
 			$this->log_error(
-				'Failed to store pending boost transient; federation-complete hook will not fire for this post',
+				'Failed to store pending boost transient; federation-complete handler will not match this post, falling back to timer',
 				array(
 					'post_id'         => $post_id,
 					'activitypub_url' => $activitypub_url,
@@ -213,7 +216,8 @@ class Boost {
 	 * post. Cancels the fallback boost and reschedules the boost relative to
 	 * federation completion rather than post publish time.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
+	 * @since 1.1.0 Consolidated JSON parsing, added logging, string object handling.
 	 *
 	 * @param array  $inboxes         Target inbox URLs.
 	 * @param string $json            The ActivityPub Activity JSON.
@@ -337,7 +341,7 @@ class Boost {
 	 * does not fire (e.g., older ActivityPub plugin version). If the federation hook
 	 * fires first, it will cancel this fallback and reschedule with the normal delay.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
 	 *
 	 * @param int $post_id The post ID to boost.
 	 * @return bool True if scheduled, false if already scheduled or on failure.
@@ -382,7 +386,8 @@ class Boost {
 	/**
 	 * Unschedule a pending boost for a post.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.1
+	 * @since 1.1.0 Returns bool and logs on failure.
 	 *
 	 * @param int $post_id The post ID.
 	 * @return bool True if unscheduled or nothing was scheduled, false on failure.
