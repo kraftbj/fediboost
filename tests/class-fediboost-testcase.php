@@ -11,7 +11,7 @@
 /**
  * FediBoost_TestCase class.
  *
- * @since 1.1.0
+ * @since 1.0.0
  */
 abstract class FediBoost_TestCase extends \WorDBless\BaseTestCase {
 
@@ -32,7 +32,7 @@ abstract class FediBoost_TestCase extends \WorDBless\BaseTestCase {
 	/**
 	 * Create a test user.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.0
 	 *
 	 * @param array $args Optional. User arguments. Default empty array.
 	 * @return int User ID.
@@ -51,7 +51,7 @@ abstract class FediBoost_TestCase extends \WorDBless\BaseTestCase {
 	/**
 	 * Create a test post.
 	 *
-	 * @since 1.1.0
+	 * @since 1.0.0
 	 *
 	 * @param array $args Optional. Post arguments. Default empty array.
 	 * @return int Post ID.
