@@ -254,7 +254,7 @@ class Boost {
 				if ( is_string( $object ) ) {
 					$object_id = $object;
 				} else {
-					$object_id = isset( $object['id'] ) ? $object['id'] : '';
+					$object_id = ( is_array( $object ) && isset( $object['id'] ) ) ? $object['id'] : '';
 				}
 			}
 		}
