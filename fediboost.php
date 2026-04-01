@@ -121,7 +121,11 @@ function fediboost_activate() {
 
 	// Initialize post types with ActivityPub defaults if not already set.
 	if ( false === get_option( 'fediboost_post_types' ) ) {
-		update_option( 'fediboost_post_types', get_option( 'activitypub_support_post_types', array( 'post' ) ), false );
+		$default_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+		if ( ! is_array( $default_types ) ) {
+			$default_types = array( 'post' );
+		}
+		update_option( 'fediboost_post_types', $default_types, false );
 	}
 
 	// Check ActivityPub dependency - set a flag to show notice on next admin load.
