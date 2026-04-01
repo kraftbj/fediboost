@@ -107,9 +107,9 @@ class Boost {
 	/**
 	 * Handle post publish event.
 	 *
-	 * Stores a pending-boost transient for the post and schedules a fallback. The primary boost
-	 * scheduling happens in on_federation_complete() after ActivityPub has finished
-	 * federating the post.
+	 * Checks the post type against the allowed list, stores a pending-boost transient
+	 * for the post, and schedules a fallback. The primary boost scheduling happens in
+	 * on_federation_complete() after ActivityPub has finished federating the post.
 	 *
 	 * @since 1.0.0
 	 *
@@ -133,7 +133,7 @@ class Boost {
 		// no FediBoost preference is saved (e.g., first run before visiting settings).
 		$allowed_post_types = get_option( 'fediboost_post_types' );
 		if ( false === $allowed_post_types ) {
-			$allowed_post_types = get_option( 'activitypub_support_post_types', array() );
+			$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
 			$this->log_info(
 				'fediboost_post_types option not set, falling back to ActivityPub defaults',
 				array(
@@ -275,6 +275,30 @@ class Boost {
 
 		if ( ! $post_id ) {
 			return;
+		}
+
+		// Revalidate post type eligibility in case settings changed since publish.
+		$post = get_post( $post_id );
+		if ( $post ) {
+			$allowed_post_types = get_option( 'fediboost_post_types' );
+			if ( false === $allowed_post_types ) {
+				$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+			}
+			if ( ! is_array( $allowed_post_types ) ) {
+				$allowed_post_types = array();
+			}
+			if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+				$this->log_info(
+					'Post type no longer eligible for boost at federation time',
+					array(
+						'post_id'   => $post_id,
+						'post_type' => $post->post_type,
+					)
+				);
+				delete_transient( $transient_key );
+				$this->unschedule_boost( $post_id );
+				return;
+			}
 		}
 
 		$this->log_info(
@@ -439,6 +463,26 @@ class Boost {
 		$post = get_post( $post_id );
 		if ( ! $post || 'publish' !== $post->post_status ) {
 			$this->log_error( 'Post not found or not published', array( 'post_id' => $post_id ) );
+			return;
+		}
+
+		// Revalidate post type eligibility in case settings changed between
+		// publish time and cron execution.
+		$allowed_post_types = get_option( 'fediboost_post_types' );
+		if ( false === $allowed_post_types ) {
+			$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+		}
+		if ( ! is_array( $allowed_post_types ) ) {
+			$allowed_post_types = array();
+		}
+		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+			$this->log_info(
+				'Post type no longer eligible for boost at execution time',
+				array(
+					'post_id'   => $post_id,
+					'post_type' => $post->post_type,
+				)
+			);
 			return;
 		}
 

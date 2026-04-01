@@ -217,7 +217,10 @@ class Admin {
 		}
 
 		$activitypub_types = get_option( 'activitypub_support_post_types', array() );
-		$sanitized         = array();
+		if ( ! is_array( $activitypub_types ) ) {
+			$activitypub_types = array();
+		}
+		$sanitized = array();
 
 		foreach ( $post_types as $slug ) {
 			$slug = sanitize_key( $slug );
@@ -253,7 +256,7 @@ class Admin {
 	}
 
 	/**
-	 * Render General section description.
+	 * Render Post Types section description.
 	 *
 	 * @since 1.1.0
 	 */
@@ -265,13 +268,18 @@ class Admin {
 	 * Render the post types checkbox field.
 	 *
 	 * Displays a checkbox for each post type enabled in the ActivityPub plugin.
-	 * If ActivityPub is inactive or has no post types configured, displays an
-	 * informational notice instead.
+	 * If no ActivityPub-supported post types are configured (the
+	 * `activitypub_support_post_types` option is empty or missing), displays
+	 * an informational notice instead. Post types that are in the ActivityPub
+	 * list but no longer registered are skipped with a logged warning.
 	 *
 	 * @since 1.1.0
 	 */
 	public function render_post_types_field() {
 		$activitypub_types = get_option( 'activitypub_support_post_types', array() );
+		if ( ! is_array( $activitypub_types ) ) {
+			$activitypub_types = array();
+		}
 
 		if ( empty( $activitypub_types ) ) {
 			echo '<p class="description">';
@@ -300,6 +308,10 @@ class Admin {
 			$post_type_obj = get_post_type_object( $post_type_slug );
 
 			if ( ! $post_type_obj ) {
+				$this->log_error(
+					'ActivityPub-enabled post type is not registered, skipping checkbox',
+					array( 'post_type' => $post_type_slug )
+				);
 				continue;
 			}
 

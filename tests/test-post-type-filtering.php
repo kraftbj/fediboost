@@ -345,6 +345,74 @@ class Test_Post_Type_Filtering extends FediBoost_TestCase {
 	}
 
 	/**
+	 * Test that on_post_publish handles a corrupted (non-array) fediboost_post_types option.
+	 *
+	 * When the option contains a non-array value (e.g., database corruption or plugin
+	 * conflict), the method should treat it as an empty array and not schedule a boost.
+	 */
+	public function test_on_post_publish_handles_corrupted_non_array_option() {
+		// Corrupt the option with a string value.
+		update_option( 'fediboost_post_types', 'corrupted' );
+
+		$post_id = $this->create_post(
+			array(
+				'post_status' => 'publish',
+				'post_type'   => 'post',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		// Should not cause errors or schedule a boost.
+		$this->boost->on_post_publish( $post_id, $post, false, null );
+
+		$this->assertFalse( wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
+	}
+
+	/**
+	 * Test that sanitize_post_types returns an empty array when given an empty array.
+	 *
+	 * This covers the "uncheck all checkboxes" user flow where the browser sends
+	 * an empty array (or WordPress passes null, handled by the non-array check).
+	 */
+	public function test_sanitize_post_types_returns_empty_array_for_empty_array_input() {
+		update_option( 'activitypub_support_post_types', array( 'post' ) );
+
+		$result = $this->admin->sanitize_post_types( array() );
+
+		$this->assertSame( array(), $result );
+	}
+
+	/**
+	 * Test that render_post_types_field pre-checks all boxes when fediboost_post_types
+	 * does not exist yet (first-run experience).
+	 *
+	 * Before the user ever visits the settings page, all ActivityPub-enabled types
+	 * should appear checked for UI consistency with the runtime fallback.
+	 */
+	public function test_first_run_prechecks_all_activitypub_types() {
+		// Ensure fediboost_post_types does NOT exist.
+		delete_option( 'fediboost_post_types' );
+
+		// Set ActivityPub supported post types.
+		update_option( 'activitypub_support_post_types', array( 'post', 'page' ) );
+
+		ob_start();
+		$this->admin->render_post_types_field();
+		$output = ob_get_clean();
+
+		// Both checkboxes should be checked.
+		$this->assertMatchesRegularExpression(
+			'/value="post"[^>]*checked/',
+			$output
+		);
+		$this->assertMatchesRegularExpression(
+			'/value="page"[^>]*checked/',
+			$output
+		);
+	}
+
+	/**
 	 * Test that uninstall.php removes the fediboost_post_types option.
 	 *
 	 * Verifies that the option is included in the uninstall cleanup list.
