@@ -365,4 +365,117 @@ class Test_Boost_Functionality extends FediBoost_TestCase {
 		// The transient should still exist.
 		$this->assertEquals( $post_id, get_transient( 'fediboost_pending_' . md5( $object_url ) ) );
 	}
+
+	/**
+	 * Test on_federation_complete uses JSON fallback when post meta is unavailable.
+	 *
+	 * Exercises the code path where _activitypub_activity_type and
+	 * _activitypub_object_id meta are not set, so the method parses the
+	 * JSON body to determine the activity type and object ID.
+	 *
+	 * @since 1.1.0
+	 */
+	public function test_on_federation_complete_json_fallback() {
+		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
+		$object_url = 'https://example.com/?p=' . $post_id;
+
+		// Simulate the pending transient set by on_post_publish.
+		set_transient( 'fediboost_pending_' . md5( $object_url ), $post_id, HOUR_IN_SECONDS );
+
+		// Simulate a fallback cron event already scheduled.
+		wp_schedule_single_event( time() + Boost::FALLBACK_DELAY, 'fediboost_boost_post', array( $post_id ) );
+
+		// Create an outbox item WITHOUT post meta — forces JSON fallback.
+		$outbox_id = $this->create_post( array( 'post_type' => 'ap_outbox' ) );
+
+		$json = wp_json_encode(
+			array(
+				'type'   => 'Create',
+				'object' => array(
+					'id'   => $object_url,
+					'type' => 'Note',
+				),
+			)
+		);
+
+		$before = time();
+		$this->boost->on_federation_complete( array( 'https://remote.example/inbox' ), $json, 1, $outbox_id );
+		$after = time();
+
+		// The boost should have been rescheduled with the shorter delay.
+		$scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+		$this->assertNotFalse( $scheduled );
+		$this->assertGreaterThanOrEqual( $before + Boost::BOOST_DELAY, $scheduled );
+		$this->assertLessThanOrEqual( $after + Boost::BOOST_DELAY, $scheduled );
+
+		// The pending transient should be cleaned up.
+		$this->assertFalse( get_transient( 'fediboost_pending_' . md5( $object_url ) ) );
+	}
+
+	/**
+	 * Test on_federation_complete handles string object URL in JSON.
+	 *
+	 * Per the ActivityPub spec, the object field can be a bare string URL
+	 * instead of a nested object with an id field.
+	 *
+	 * @since 1.1.0
+	 */
+	public function test_on_federation_complete_json_string_object() {
+		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
+		$object_url = 'https://example.com/?p=' . $post_id;
+
+		// Simulate the pending transient.
+		set_transient( 'fediboost_pending_' . md5( $object_url ), $post_id, HOUR_IN_SECONDS );
+
+		// Schedule a fallback.
+		wp_schedule_single_event( time() + Boost::FALLBACK_DELAY, 'fediboost_boost_post', array( $post_id ) );
+
+		// Create outbox item without meta.
+		$outbox_id = $this->create_post( array( 'post_type' => 'ap_outbox' ) );
+
+		// JSON with object as a bare string URL (valid per ActivityPub spec).
+		$json = wp_json_encode(
+			array(
+				'type'   => 'Create',
+				'object' => $object_url,
+			)
+		);
+
+		$before = time();
+		$this->boost->on_federation_complete( array( 'https://remote.example/inbox' ), $json, 1, $outbox_id );
+		$after = time();
+
+		// The boost should have been rescheduled.
+		$scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+		$this->assertNotFalse( $scheduled );
+		$this->assertGreaterThanOrEqual( $before + Boost::BOOST_DELAY, $scheduled );
+		$this->assertLessThanOrEqual( $after + Boost::BOOST_DELAY, $scheduled );
+	}
+
+	/**
+	 * Test on_federation_complete handles malformed JSON gracefully.
+	 *
+	 * @since 1.1.0
+	 */
+	public function test_on_federation_complete_malformed_json() {
+		$post_id    = $this->create_post( array( 'post_status' => 'publish' ) );
+		$object_url = 'https://example.com/?p=' . $post_id;
+
+		// Set up transient and fallback.
+		set_transient( 'fediboost_pending_' . md5( $object_url ), $post_id, HOUR_IN_SECONDS );
+		wp_schedule_single_event( time() + Boost::FALLBACK_DELAY, 'fediboost_boost_post', array( $post_id ) );
+		$original_scheduled = wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) );
+
+		// Create outbox item without meta.
+		$outbox_id = $this->create_post( array( 'post_type' => 'ap_outbox' ) );
+
+		// Pass malformed JSON.
+		$this->boost->on_federation_complete( array( 'https://remote.example/inbox' ), 'not valid json', 1, $outbox_id );
+
+		// The fallback schedule should remain unchanged.
+		$this->assertEquals( $original_scheduled, wp_next_scheduled( 'fediboost_boost_post', array( $post_id ) ) );
+
+		// The transient should still exist.
+		$this->assertEquals( $post_id, get_transient( 'fediboost_pending_' . md5( $object_url ) ) );
+	}
 }

@@ -34,7 +34,7 @@ class Boost {
 	const CRON_HOOK = 'fediboost_boost_post';
 
 	/**
-	 * Boost delay in seconds after ActivityPub federation completes.
+	 * Default delay in seconds before executing a boost.
 	 *
 	 * @since 1.0.0
 	 *
@@ -107,9 +107,9 @@ class Boost {
 	/**
 	 * Handle post publish event.
 	 *
-	 * Marks the post as pending boost and schedules a fallback. The primary boost
-	 * scheduling happens in on_federation_complete() after ActivityPub has finished
-	 * federating the post.
+	 * Checks the post type against the allowed list, stores a pending-boost transient
+	 * for the post, and schedules a fallback. The primary boost scheduling happens in
+	 * on_federation_complete() after ActivityPub has finished federating the post.
 	 *
 	 * @since 1.0.0
 	 *
@@ -126,6 +126,40 @@ class Boost {
 
 		// Only process if this is a new publish (not an update to already published post).
 		if ( null !== $post_before && 'publish' === $post_before->post_status ) {
+			return;
+		}
+
+		// Check post type eligibility, falling back to ActivityPub defaults if
+		// no FediBoost preference is saved (e.g., first run before visiting settings).
+		$allowed_post_types = get_option( 'fediboost_post_types' );
+		if ( false === $allowed_post_types ) {
+			$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+			$this->log_info(
+				'fediboost_post_types option not set, falling back to ActivityPub defaults',
+				array(
+					'post_id'        => $post_id,
+					'fallback_types' => $allowed_post_types,
+				)
+			);
+		}
+		if ( ! is_array( $allowed_post_types ) ) {
+			$this->log_error(
+				'fediboost_post_types option has unexpected type, treating as empty',
+				array(
+					'post_id' => $post_id,
+					'type'    => gettype( $allowed_post_types ),
+				)
+			);
+			$allowed_post_types = array();
+		}
+		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+			$this->log_info(
+				'Post type not eligible for boost',
+				array(
+					'post_id'   => $post_id,
+					'post_type' => $post->post_type,
+				)
+			);
 			return;
 		}
 
@@ -166,7 +200,17 @@ class Boost {
 			return;
 		}
 
-		set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
+		$transient_set = set_transient( 'fediboost_pending_' . md5( $activitypub_url ), $post_id, HOUR_IN_SECONDS );
+
+		if ( ! $transient_set ) {
+			$this->log_error(
+				'Failed to store pending boost transient; federation-complete handler will not match this post, falling back to timer',
+				array(
+					'post_id'         => $post_id,
+					'activitypub_url' => $activitypub_url,
+				)
+			);
+		}
 
 		// Schedule a fallback boost in case the ActivityPub federation hook doesn't fire.
 		$this->schedule_fallback_boost( $post_id );
@@ -175,11 +219,12 @@ class Boost {
 	/**
 	 * Handle ActivityPub federation completion.
 	 *
-	 * Fires after the ActivityPub plugin has finished sending a post to all follower
-	 * inboxes. Cancels the fallback boost and reschedules the boost relative to
+	 * Fires after the ActivityPub plugin has finished processing the outbox for a
+	 * post. Cancels the fallback boost and reschedules the boost relative to
 	 * federation completion rather than post publish time.
 	 *
 	 * @since 1.0.1
+	 * @since 1.1.0 Consolidated JSON parsing, added logging, string object handling.
 	 *
 	 * @param array  $inboxes         Target inbox URLs.
 	 * @param string $json            The ActivityPub Activity JSON.
@@ -187,42 +232,40 @@ class Boost {
 	 * @param int    $outbox_item_id  The outbox item post ID.
 	 */
 	public function on_federation_complete( $inboxes, $json, $actor_id, $outbox_item_id ) {
-		// Only process Create activities (new posts, not updates or deletes).
-		$type = get_post_meta( $outbox_item_id, '_activitypub_activity_type', true );
+		// Read activity type and object ID from outbox post meta first.
+		$type      = get_post_meta( $outbox_item_id, '_activitypub_activity_type', true );
+		$object_id = get_post_meta( $outbox_item_id, '_activitypub_object_id', true );
 
-		if ( ! $type ) {
-			// Fall back to parsing the activity JSON if meta is unavailable.
+		// Fall back to parsing the activity JSON when either value is missing.
+		if ( ! $type || empty( $object_id ) ) {
 			$activity = json_decode( $json, true );
 
 			if ( ! is_array( $activity ) ) {
+				$this->log_error( 'Could not parse activity JSON', array( 'outbox_item_id' => $outbox_item_id ) );
 				return;
 			}
 
-			$type = isset( $activity['type'] ) ? $activity['type'] : '';
+			if ( ! $type ) {
+				$type = isset( $activity['type'] ) ? $activity['type'] : '';
+			}
+
+			if ( empty( $object_id ) ) {
+				$object = isset( $activity['object'] ) ? $activity['object'] : array();
+				if ( is_string( $object ) ) {
+					$object_id = $object;
+				} else {
+					$object_id = ( is_array( $object ) && isset( $object['id'] ) ) ? $object['id'] : '';
+				}
+			}
 		}
 
+		// Only process Create activities (new posts, not updates or deletes).
 		if ( 'Create' !== $type ) {
 			return;
 		}
 
-		// Get the ActivityPub object URL from outbox item meta.
-		$object_id = get_post_meta( $outbox_item_id, '_activitypub_object_id', true );
-
 		if ( empty( $object_id ) ) {
-			// Fall back to parsing the activity JSON.
-			if ( ! isset( $activity ) ) {
-				$activity = json_decode( $json, true );
-			}
-
-			if ( ! is_array( $activity ) ) {
-				return;
-			}
-
-			$object    = isset( $activity['object'] ) ? $activity['object'] : array();
-			$object_id = isset( $object['id'] ) ? $object['id'] : '';
-		}
-
-		if ( empty( $object_id ) ) {
+			$this->log_info( 'Could not determine object ID from outbox item', array( 'outbox_item_id' => $outbox_item_id ) );
 			return;
 		}
 
@@ -232,6 +275,30 @@ class Boost {
 
 		if ( ! $post_id ) {
 			return;
+		}
+
+		// Revalidate post type eligibility in case settings changed since publish.
+		$post = get_post( $post_id );
+		if ( $post ) {
+			$allowed_post_types = get_option( 'fediboost_post_types' );
+			if ( false === $allowed_post_types ) {
+				$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+			}
+			if ( ! is_array( $allowed_post_types ) ) {
+				$allowed_post_types = array();
+			}
+			if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+				$this->log_info(
+					'Post type no longer eligible for boost at federation time',
+					array(
+						'post_id'   => $post_id,
+						'post_type' => $post->post_type,
+					)
+				);
+				delete_transient( $transient_key );
+				$this->unschedule_boost( $post_id );
+				return;
+			}
 		}
 
 		$this->log_info(
@@ -245,8 +312,11 @@ class Boost {
 		// Clean up the pending transient.
 		delete_transient( $transient_key );
 
-		// Cancel the fallback boost.
-		$this->unschedule_boost( $post_id );
+		// Cancel the fallback boost. If unscheduling fails, the fallback is still
+		// pending so we must not schedule a duplicate.
+		if ( ! $this->unschedule_boost( $post_id ) ) {
+			return;
+		}
 
 		// Schedule the boost for the configured delay after federation completes.
 		$this->schedule_boost( $post_id );
@@ -305,7 +375,7 @@ class Boost {
 	 * @since 1.0.1
 	 *
 	 * @param int $post_id The post ID to boost.
-	 * @return bool True if scheduled, false on failure.
+	 * @return bool True if scheduled, false if already scheduled or on failure.
 	 */
 	public function schedule_fallback_boost( $post_id ) {
 		// Check if already scheduled (prevent duplicates).
@@ -348,16 +418,30 @@ class Boost {
 	 * Unschedule a pending boost for a post.
 	 *
 	 * @since 1.0.1
+	 * @since 1.1.0 Returns bool and logs on failure.
 	 *
 	 * @param int $post_id The post ID.
+	 * @return bool True if unscheduled or nothing was scheduled, false on failure.
 	 */
 	private function unschedule_boost( $post_id ) {
 		$timestamp = wp_next_scheduled( self::CRON_HOOK, array( $post_id ) );
 
 		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK, array( $post_id ) );
+			$result = wp_unschedule_event( $timestamp, self::CRON_HOOK, array( $post_id ) );
+			if ( false === $result ) {
+				$this->log_error(
+					'Failed to unschedule previous boost',
+					array(
+						'post_id'   => $post_id,
+						'timestamp' => $timestamp,
+					)
+				);
+				return false;
+			}
 			$this->log_info( 'Cancelled previous boost schedule', array( 'post_id' => $post_id ) );
 		}
+
+		return true;
 	}
 
 	/**
@@ -379,6 +463,26 @@ class Boost {
 		$post = get_post( $post_id );
 		if ( ! $post || 'publish' !== $post->post_status ) {
 			$this->log_error( 'Post not found or not published', array( 'post_id' => $post_id ) );
+			return;
+		}
+
+		// Revalidate post type eligibility in case settings changed between
+		// publish time and cron execution.
+		$allowed_post_types = get_option( 'fediboost_post_types' );
+		if ( false === $allowed_post_types ) {
+			$allowed_post_types = get_option( 'activitypub_support_post_types', array( 'post' ) );
+		}
+		if ( ! is_array( $allowed_post_types ) ) {
+			$allowed_post_types = array();
+		}
+		if ( ! in_array( $post->post_type, $allowed_post_types, true ) ) {
+			$this->log_info(
+				'Post type no longer eligible for boost at execution time',
+				array(
+					'post_id'   => $post_id,
+					'post_type' => $post->post_type,
+				)
+			);
 			return;
 		}
 
