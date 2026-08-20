@@ -2,7 +2,7 @@
 Contributors: kraftbj
 Tags: activitypub, mastodon, fediverse, boost, social
 Requires at least: 6.9
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.0.1
 License: GPLv2 or later
