@@ -102,6 +102,122 @@ class Boost {
 
 		// Register cron hook handler.
 		add_action( self::CRON_HOOK, array( $this, 'execute_boost' ) );
+
+		/*
+		 * Drop the "repost" interactions ActivityPub would otherwise record when a
+		 * connected account boosts the post. ActivityPub stores incoming Announce
+		 * activities via wp_new_comment( $data, true ), so a WP_Error from
+		 * pre_comment_approved aborts the insert cleanly.
+		 */
+		add_filter( 'pre_comment_approved', array( $this, 'maybe_reject_self_boost' ), 10, 2 );
+	}
+
+	/**
+	 * Reject repost comments that originate from a connected Mastodon account.
+	 *
+	 * Every boost FediBoost performs is federated back to the site as an Announce,
+	 * which ActivityPub records as a "repost" interaction on the post. Those
+	 * reactions are just the site boosting itself, so they are discarded.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int|string|\WP_Error $approved    The approval status.
+	 * @param array                $commentdata Comment data.
+	 * @return int|string|\WP_Error The approval status, or a WP_Error to discard the comment.
+	 */
+	public function maybe_reject_self_boost( $approved, $commentdata ) {
+		if ( is_wp_error( $approved ) || ! is_array( $commentdata ) ) {
+			return $approved;
+		}
+
+		if ( ! isset( $commentdata['comment_type'] ) || 'repost' !== $commentdata['comment_type'] ) {
+			return $approved;
+		}
+
+		$meta = isset( $commentdata['comment_meta'] ) && is_array( $commentdata['comment_meta'] ) ? $commentdata['comment_meta'] : array();
+		if ( ! isset( $meta['protocol'] ) || 'activitypub' !== $meta['protocol'] ) {
+			return $approved;
+		}
+
+		/**
+		 * Filters whether reposts from connected Mastodon accounts are discarded.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool  $ignore      Whether to discard the repost. Default true.
+		 * @param array $commentdata Comment data for the incoming repost.
+		 */
+		if ( ! apply_filters( 'fediboost_ignore_self_boosts', true, $commentdata ) ) {
+			return $approved;
+		}
+
+		$candidates = array(
+			isset( $commentdata['comment_author_url'] ) ? $commentdata['comment_author_url'] : '',
+			isset( $meta['source_id'] ) ? $meta['source_id'] : '',
+		);
+
+		foreach ( $candidates as $url ) {
+			if ( $this->is_connected_account_url( $url ) ) {
+				$this->log_info(
+					'Discarded repost from connected account',
+					array(
+						'post_id' => isset( $commentdata['comment_post_ID'] ) ? (int) $commentdata['comment_post_ID'] : 0,
+						'url'     => $url,
+					)
+				);
+
+				return new \WP_Error(
+					'fediboost_self_boost',
+					__( 'Repost from a connected FediBoost account ignored.', 'fediboost' ),
+					409
+				);
+			}
+		}
+
+		return $approved;
+	}
+
+	/**
+	 * Check whether a URL belongs to one of the connected Mastodon accounts.
+	 *
+	 * Matches the actor profile URL (https://host/@user) and actor/activity IDs
+	 * (https://host/users/user/...) Mastodon uses, on the account's instance host.
+	 * Disconnected accounts are included, since their earlier boosts still federate.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $url The URL to check.
+	 * @return bool True if the URL belongs to a connected account.
+	 */
+	public function is_connected_account_url( $url ) {
+		if ( ! is_string( $url ) || '' === $url ) {
+			return false;
+		}
+
+		$host = wp_parse_url( $url, PHP_URL_HOST );
+		$path = wp_parse_url( $url, PHP_URL_PATH );
+
+		if ( ! $host || ! $path ) {
+			return false;
+		}
+
+		foreach ( Accounts::get_instance()->get_all_accounts() as $account ) {
+			if ( empty( $account['instance_url'] ) || empty( $account['username'] ) ) {
+				continue;
+			}
+
+			$account_host = wp_parse_url( $account['instance_url'], PHP_URL_HOST );
+			if ( ! $account_host || 0 !== strcasecmp( $account_host, $host ) ) {
+				continue;
+			}
+
+			$pattern = '#^/(?:@|users/)' . preg_quote( $account['username'], '#' ) . '(?:/|$)#i';
+			if ( preg_match( $pattern, $path ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

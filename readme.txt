@@ -46,6 +46,10 @@ No, FediBoost requires the ActivityPub plugin to be installed and properly confi
 
 Currently, FediBoost will boost all newly published posts. Future versions may include options to selectively boost posts based on categories, tags, or other criteria. Developers can use the `fediboost_should_boost_post` filter to programmatically control which posts are boosted. See the Developer Hooks section below for details.
 
+= Why don't my own boosts show up as reposts on my posts? =
+
+When FediBoost boosts a post, Mastodon sends that boost back to your site, and the ActivityPub plugin would normally record it as a "repost" on the post. Since that's just your own account boosting your own post, FediBoost discards reposts that come from any of your connected Mastodon accounts. Reposts from everyone else are recorded as usual. Developers can turn this off with the `fediboost_ignore_self_boosts` filter.
+
 = What happens if I change my WordPress authentication salts? =
 
 FediBoost encrypts OAuth tokens using your WordPress authentication salts (defined in wp-config.php). If these salts are changed — for example, by a security plugin, during a security incident response, or by manually editing wp-config.php — all stored tokens will become invalid. You will need to reconnect your Mastodon accounts under Settings > FediBoost after any salt change. This is standard behavior for WordPress plugins that encrypt sensitive data using the built-in salts.
@@ -134,6 +138,20 @@ Maximum number of connected Mastodon accounts. Default: 10.
     // Allow up to 25 connected accounts.
     return 25;
 } );`
+
+= fediboost_ignore_self_boosts =
+
+Whether reposts from connected Mastodon accounts are discarded instead of being recorded as "repost" interactions on the post. Default: true.
+
+**Parameters:**
+
+* `$ignore` (bool) — Whether to discard the repost.
+* `$commentdata` (array) — Comment data for the incoming repost.
+
+**Example:**
+
+`// Keep recording reposts from connected accounts.
+add_filter( 'fediboost_ignore_self_boosts', '__return_false' );`
 
 == External Services ==
 
