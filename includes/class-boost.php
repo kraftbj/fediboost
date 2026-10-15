@@ -102,6 +102,223 @@ class Boost {
 
 		// Register cron hook handler.
 		add_action( self::CRON_HOOK, array( $this, 'execute_boost' ) );
+
+		/*
+		 * Drop the "repost" interactions ActivityPub would otherwise record when a
+		 * connected account boosts the post. ActivityPub stores incoming Announce
+		 * activities via wp_new_comment( $data, true ), so a WP_Error from
+		 * pre_comment_approved aborts the insert cleanly.
+		 */
+		add_filter( 'pre_comment_approved', array( $this, 'maybe_reject_self_boost' ), 10, 2 );
+	}
+
+	/**
+	 * Reject repost comments that originate from a connected Mastodon account.
+	 *
+	 * Every boost FediBoost performs is federated back to the site as an Announce,
+	 * which ActivityPub records as a "repost" interaction on the post. Those
+	 * reactions are just the site boosting itself, so they are discarded.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int|string|\WP_Error $approved    The approval status.
+	 * @param array                $commentdata Comment data.
+	 * @return int|string|\WP_Error The approval status, or a WP_Error to discard the comment.
+	 */
+	public function maybe_reject_self_boost( $approved, $commentdata ) {
+		if ( is_wp_error( $approved ) || ! is_array( $commentdata ) ) {
+			return $approved;
+		}
+
+		if ( ! $this->is_self_boost( $commentdata ) ) {
+			return $approved;
+		}
+
+		/**
+		 * Filters whether reposts from connected Mastodon accounts are discarded.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool  $ignore      Whether to discard the repost. Default true.
+		 * @param array $commentdata Comment data for the incoming repost.
+		 */
+		if ( ! apply_filters( 'fediboost_ignore_self_boosts', true, $commentdata ) ) {
+			return $approved;
+		}
+
+		$this->log_info(
+			'Discarded repost from connected account',
+			array(
+				'post_id' => isset( $commentdata['comment_post_ID'] ) ? (int) $commentdata['comment_post_ID'] : 0,
+			)
+		);
+
+		return new \WP_Error(
+			'fediboost_self_boost',
+			__( 'Repost from a connected FediBoost account ignored.', 'fediboost' ),
+			409
+		);
+	}
+
+	/**
+	 * Check whether comment data describes a repost from a connected Mastodon account.
+	 *
+	 * Expects the shape ActivityPub passes to wp_new_comment(): `comment_type`,
+	 * `comment_author_url`, and `comment_meta` with `protocol` and `source_id`.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $commentdata Comment data.
+	 * @return bool True if this is an ActivityPub repost from a connected account.
+	 */
+	public function is_self_boost( $commentdata ) {
+		if ( ! is_array( $commentdata ) ) {
+			return false;
+		}
+
+		if ( ! isset( $commentdata['comment_type'] ) || 'repost' !== $commentdata['comment_type'] ) {
+			return false;
+		}
+
+		$meta = isset( $commentdata['comment_meta'] ) && is_array( $commentdata['comment_meta'] ) ? $commentdata['comment_meta'] : array();
+		if ( ! isset( $meta['protocol'] ) || 'activitypub' !== $meta['protocol'] ) {
+			return false;
+		}
+
+		$candidates = array(
+			isset( $commentdata['comment_author_url'] ) ? $commentdata['comment_author_url'] : '',
+			isset( $meta['source_id'] ) ? $meta['source_id'] : '',
+		);
+
+		foreach ( $candidates as $url ) {
+			if ( $this->is_connected_account_url( $url ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Find stored ActivityPub reposts that came from connected accounts.
+	 *
+	 * Covers approved, pending, and spam reposts. Already-trashed reposts are skipped.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return \WP_Comment[] Matching comments.
+	 */
+	public function find_self_boost_comments() {
+		// Full objects (not IDs) so WP_Comment_Query primes comments and their meta in bulk.
+		$comments = get_comments(
+			array(
+				'type'       => 'repost',
+				'status'     => array( 'approve', 'hold', 'spam' ),
+				'meta_key'   => 'protocol', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'activitypub', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'number'     => 0,
+			)
+		);
+
+		$matches = array();
+
+		foreach ( $comments as $comment ) {
+			$commentdata = array(
+				'comment_type'       => $comment->comment_type,
+				'comment_author_url' => $comment->comment_author_url,
+				'comment_meta'       => array(
+					'protocol'  => get_comment_meta( $comment->comment_ID, 'protocol', true ),
+					'source_id' => get_comment_meta( $comment->comment_ID, 'source_id', true ),
+				),
+			);
+
+			if ( $this->is_self_boost( $commentdata ) ) {
+				$matches[] = $comment;
+			}
+		}
+
+		return $matches;
+	}
+
+	/**
+	 * Remove a stored self-boost repost.
+	 *
+	 * Moves the comment to the trash, or deletes it permanently when forced.
+	 * wp_delete_comment() permanently deletes spam even without force, so the
+	 * trash case calls wp_trash_comment() directly. When the trash is disabled,
+	 * wp_trash_comment() deletes permanently too, so unforced removal is refused.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param \WP_Comment $comment The comment to remove.
+	 * @param bool        $force   Whether to delete permanently instead of trashing.
+	 * @return bool True on success, false on failure or when trash is disabled and not forced.
+	 */
+	public function remove_self_boost_comment( $comment, $force = false ) {
+		if ( $force ) {
+			return (bool) wp_delete_comment( $comment, true );
+		}
+
+		if ( ! $this->is_trash_enabled() ) {
+			return false;
+		}
+
+		return (bool) wp_trash_comment( $comment );
+	}
+
+	/**
+	 * Whether WordPress keeps trashed comments rather than deleting them.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return bool False when EMPTY_TRASH_DAYS is 0.
+	 */
+	public function is_trash_enabled() {
+		return (bool) EMPTY_TRASH_DAYS;
+	}
+
+	/**
+	 * Check whether a URL belongs to one of the connected Mastodon accounts.
+	 *
+	 * Matches the actor profile URL (https://host/@user) and actor/activity IDs
+	 * (https://host/users/user/...) Mastodon uses, on the account's instance host.
+	 * Accounts marked disconnected after a token failure remain stored and are
+	 * included; accounts removed via the settings page Disconnect action are not.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $url The URL to check.
+	 * @return bool True if the URL belongs to a connected account.
+	 */
+	public function is_connected_account_url( $url ) {
+		if ( ! is_string( $url ) || '' === $url ) {
+			return false;
+		}
+
+		$host = wp_parse_url( $url, PHP_URL_HOST );
+		$path = wp_parse_url( $url, PHP_URL_PATH );
+
+		if ( ! $host || ! $path ) {
+			return false;
+		}
+
+		foreach ( Accounts::get_instance()->get_all_accounts() as $account ) {
+			if ( empty( $account['instance_url'] ) || empty( $account['username'] ) ) {
+				continue;
+			}
+
+			$account_host = wp_parse_url( $account['instance_url'], PHP_URL_HOST );
+			if ( ! $account_host || 0 !== strcasecmp( $account_host, $host ) ) {
+				continue;
+			}
+
+			$pattern = '#^/(?:@|users/)' . preg_quote( $account['username'], '#' ) . '(?:/|$)#i';
+			if ( preg_match( $pattern, $path ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

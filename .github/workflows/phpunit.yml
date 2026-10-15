@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
@@ -49,10 +49,12 @@ jobs:
           unzip -qo /tmp/wp-nightly.zip -d .
           mkdir -p wordpress/wp-content/themes
           cp vendor/automattic/wordbless/src/dbless-wpdb.php wordpress/wp-content/db.php
+          mkdir -p wordpress/wp-content/plugins
+          cp -r vendor/automattic/wordbless/third-party/sqlite-database-integration wordpress/wp-content/plugins/wp-sqlite-integration
 
       - name: Use WordPress ${{ matrix.wp }}
         if: matrix.wp != 'latest' && matrix.wp != 'trunk'
-        run: composer require "roots/wordpress:${{ matrix.wp }}.*" --no-interaction
+        run: composer require "roots/wordpress:${{ matrix.wp }}.*" --with-all-dependencies --no-interaction
 
       - name: Run PHPUnit
         run: composer test

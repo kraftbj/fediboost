@@ -75,6 +75,7 @@ require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
  *   wp_after_insert_post (priority 50)              → on_post_publish()
  *   activitypub_outbox_processing_complete           → on_federation_complete()
  *   fediboost_boost_post (cron)                      → execute_boost()
+ *   pre_comment_approved                             → maybe_reject_self_boost()
  *
  * FediBoost\Admin::init_hooks():
  *   admin_menu             → register_admin_menu()
@@ -90,6 +91,7 @@ require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
  *   wp fediboost accounts → accounts_command()
  *   wp fediboost boost    → boost_command()
  *   wp fediboost status   → status_command()
+ *   wp fediboost cleanup-self-boosts → cleanup_self_boosts_command()
  */
 
 // Register activation hook.

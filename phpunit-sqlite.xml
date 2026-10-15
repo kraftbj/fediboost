@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+	Tests that need a real database (WorDBless with SQLite).
+	WorDBless picks its engine once per process, so this suite runs separately
+	from phpunit.xml: vendor/bin/phpunit -c phpunit-sqlite.xml
+-->
+<phpunit
+	bootstrap="tests/bootstrap-sqlite.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+>
+	<testsuites>
+		<testsuite name="sqlite">
+			<directory prefix="test-" suffix=".php">./tests/sqlite/</directory>
+		</testsuite>
+	</testsuites>
+
+	<filter>
+		<whitelist>
+			<directory suffix=".php">./</directory>
+			<exclude>
+				<directory suffix=".php">./tests/</directory>
+				<directory suffix=".php">./vendor/</directory>
+			</exclude>
+		</whitelist>
+	</filter>
+</phpunit>

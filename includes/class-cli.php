@@ -65,6 +65,7 @@ class CLI {
 		\WP_CLI::add_command( 'fediboost accounts', array( $this, 'accounts_command' ) );
 		\WP_CLI::add_command( 'fediboost boost', array( $this, 'boost_command' ) );
 		\WP_CLI::add_command( 'fediboost status', array( $this, 'status_command' ) );
+		\WP_CLI::add_command( 'fediboost cleanup-self-boosts', array( $this, 'cleanup_self_boosts_command' ) );
 	}
 
 	/**
@@ -273,6 +274,144 @@ class CLI {
 				);
 			}
 			\WP_CLI\Utils\format_items( 'table', $table_data, array( 'field', 'value' ) );
+		}
+	}
+
+	/**
+	 * Remove stored reposts made by FediBoost's own Mastodon accounts.
+	 *
+	 * Before FediBoost ignored them, each boost federated back to the site and was
+	 * recorded by ActivityPub as a "repost" interaction on the post. This finds
+	 * those reposts (approved, pending, or spam) using the same account matching
+	 * as the incoming filter, and moves them to the trash. If the trash is
+	 * disabled (EMPTY_TRASH_DAYS is 0), --force is required.
+	 *
+	 * Only accounts still stored by FediBoost are matched, so run this before
+	 * disconnecting an account whose reposts you want removed.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : List the reposts that would be removed without changing anything.
+	 *
+	 * [--force]
+	 * : Permanently delete the reposts instead of moving them to the trash.
+	 *
+	 * [--format=<format>]
+	 * : Output format for the list of reposts.
+	 * ---
+	 * default: table
+	 * options:
+	 *   - table
+	 *   - json
+	 *   - csv
+	 *   - yaml
+	 *   - count
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # Preview which reposts would be removed
+	 *     $ wp fediboost cleanup-self-boosts --dry-run
+	 *
+	 *     # Move them to the trash
+	 *     $ wp fediboost cleanup-self-boosts
+	 *
+	 *     # Delete them permanently
+	 *     $ wp fediboost cleanup-self-boosts --force
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function cleanup_self_boosts_command( $args, $assoc_args ) {
+		$dry_run = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$force   = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$format  = \WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'table' );
+
+		if ( ! Accounts::get_instance()->has_accounts() ) {
+			\WP_CLI::error( 'No Mastodon accounts are stored, so there is nothing to match reposts against.' );
+		}
+
+		$fields = array( 'comment_id', 'post_id', 'author', 'author_url', 'status', 'date' );
+
+		// Keep machine-readable output parseable; warnings and errors still go to STDERR.
+		$verbose = 'table' === $format;
+
+		$boost    = Boost::get_instance();
+		$comments = $boost->find_self_boost_comments();
+
+		if ( empty( $comments ) ) {
+			if ( $verbose ) {
+				\WP_CLI::success( 'No reposts from connected accounts found.' );
+			} else {
+				\WP_CLI\Utils\format_items( $format, array(), $fields );
+			}
+			return;
+		}
+
+		$rows = array();
+		foreach ( $comments as $comment ) {
+			$rows[] = array(
+				'comment_id' => (int) $comment->comment_ID,
+				'post_id'    => (int) $comment->comment_post_ID,
+				'author'     => $comment->comment_author,
+				'author_url' => $comment->comment_author_url,
+				'status'     => wp_get_comment_status( $comment ),
+				'date'       => $comment->comment_date,
+			);
+		}
+
+		\WP_CLI\Utils\format_items( $format, $rows, $fields );
+
+		if ( ! $force && ! $boost->is_trash_enabled() ) {
+			$trash_disabled = 'Trash is disabled (EMPTY_TRASH_DAYS is 0), so these reposts can only be deleted permanently. Re-run with --force to delete them.';
+
+			if ( $dry_run ) {
+				\WP_CLI::warning( $trash_disabled );
+				return;
+			}
+
+			\WP_CLI::error( $trash_disabled );
+		}
+
+		if ( $dry_run ) {
+			if ( $verbose ) {
+				\WP_CLI::log(
+					sprintf(
+						'Dry run: %1$d repost(s) would be %2$s.',
+						count( $comments ),
+						$force ? 'permanently deleted' : 'moved to the trash'
+					)
+				);
+			}
+			return;
+		}
+
+		$removed = 0;
+		$failed  = 0;
+		foreach ( $comments as $comment ) {
+			if ( $boost->remove_self_boost_comment( $comment, $force ) ) {
+				++$removed;
+			} else {
+				++$failed;
+				\WP_CLI::warning( sprintf( 'Could not remove comment %d.', $comment->comment_ID ) );
+			}
+		}
+
+		$message = sprintf(
+			'%1$d repost(s) %2$s.',
+			$removed,
+			$force ? 'permanently deleted' : 'moved to the trash'
+		);
+
+		if ( $failed ) {
+			\WP_CLI::error( sprintf( '%1$s %2$d could not be removed.', $message, $failed ) );
+		}
+
+		if ( $verbose ) {
+			\WP_CLI::success( $message );
 		}
 	}
 }
