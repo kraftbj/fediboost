@@ -182,7 +182,8 @@ class Boost {
 	 *
 	 * Matches the actor profile URL (https://host/@user) and actor/activity IDs
 	 * (https://host/users/user/...) Mastodon uses, on the account's instance host.
-	 * Disconnected accounts are included, since their earlier boosts still federate.
+	 * Accounts marked disconnected after a token failure remain stored and are
+	 * included; accounts removed via the settings page Disconnect action are not.
 	 *
 	 * @since 1.1.0
 	 *
