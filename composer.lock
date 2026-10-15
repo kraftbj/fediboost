@@ -4,21 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "092c667db178a56ad128473e6c4ee82e",
+    "content-hash": "e0cf65cddddaf5cd4bf8a06f265dc501",
     "packages": [],
     "packages-dev": [
         {
             "name": "automattic/wordbless",
-            "version": "dev-allow-wp-7.0",
+            "version": "0.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Automattic/wordbless.git",
-                "reference": "98d8886d87e3d907cec9bdd45b5b529a271fc249"
+                "reference": "c4818cae8e7ffe226a81e8028df27d73e39563d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Automattic/wordbless/zipball/98d8886d87e3d907cec9bdd45b5b529a271fc249",
-                "reference": "98d8886d87e3d907cec9bdd45b5b529a271fc249",
+                "url": "https://api.github.com/repos/Automattic/wordbless/zipball/c4818cae8e7ffe226a81e8028df27d73e39563d4",
+                "reference": "c4818cae8e7ffe226a81e8028df27d73e39563d4",
                 "shasum": ""
             },
             "require": {
@@ -26,6 +26,7 @@
                 "roots/wordpress": "^6.6 || ^7.0"
             },
             "require-dev": {
+                "composer/composer": "^2.9",
                 "phpunit/phpunit": "^7.5 || ^9.5",
                 "yoast/phpunit-polyfills": "^1.0"
             },
@@ -36,34 +37,7 @@
                     "WorDBless\\Composer\\": "src/Composer/"
                 }
             },
-            "scripts": {
-                "post-install-cmd": [
-                    "WorDBless\\Composer\\InstallDropin::copy"
-                ],
-                "post-update-cmd": [
-                    "WorDBless\\Composer\\InstallDropin::copy"
-                ],
-                "ci": [
-                    "phive install --trust-gpg-keys C00543248C87FB13,31C7E470E2138192,A978220305CD5C32",
-                    "@composer validate --strict",
-                    "tools/composer-normalize normalize --dry-run",
-                    "@composer require --working-dir=tools --dev 'wp-coding-standards/wpcs:^3.1.0' 'phpcsstandards/phpcsutils:^1.0' 'phpcsstandards/phpcsextra:^1.0'",
-                    "tools/phpcs --config-set installed_paths tools/vendor/wp-coding-standards/wpcs,tools/vendor/phpcsstandards/phpcsutils,tools/vendor/phpcsstandards/phpcsextra",
-                    "tools/phpcs -s --standard=WordPress-Core --exclude=WordPress.Files.FileName --ignore=*/sqlite-database-integration/* src/",
-                    "@composer require --working-dir=tools --dev 'szepeviktor/phpstan-wordpress:^1.1'",
-                    "tools/vendor/bin/phpstan analyze --memory-limit=2G src/",
-                    "@phpunit"
-                ],
-                "fix-cs": [
-                    "tools/vendor/bin/phpcbf -s --standard=WordPress-Core --exclude=WordPress.Files.FileName --ignore=*/sqlite-database-integration/* src/"
-                ],
-                "phpunit": [
-                    "@composer install",
-                    "./vendor/phpunit/phpunit/phpunit --colors=always --bootstrap tests/bootstrap.php --testsuite general",
-                    "./vendor/phpunit/phpunit/phpunit --colors=always --bootstrap tests/bootstrap-uploads.php --testsuite uploads",
-                    "./vendor/phpunit/phpunit/phpunit --colors=always --bootstrap tests/bootstrap-sqlite.php --testsuite sqlite"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "GPL-2.0-or-later"
             ],
@@ -74,10 +48,10 @@
             ],
             "description": "WorDBless allows you to use WordPress core functions in your PHPUnit tests without having to set up a database and the whole WordPress environment",
             "support": {
-                "source": "https://github.com/Automattic/wordbless/tree/allow-wp-7.0",
-                "issues": "https://github.com/Automattic/wordbless/issues"
+                "issues": "https://github.com/Automattic/wordbless/issues",
+                "source": "https://github.com/Automattic/wordbless/tree/0.6.1"
             },
-            "time": "2026-02-22T17:20:16+00:00"
+            "time": "2026-08-18T22:29:19+00:00"
         },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
@@ -2539,9 +2513,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "automattic/wordbless": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
