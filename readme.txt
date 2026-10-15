@@ -4,7 +4,7 @@ Tags: activitypub, mastodon, fediverse, boost, social
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,7 @@ When you publish a new post on your WordPress site, FediBoost will automatically
 **Features:**
 
 * Automatic boosting of new posts to connected Mastodon accounts
+* Choose which post types are boosted
 * Seamless integration with the ActivityPub plugin
 * No additional configuration required after setup
 
@@ -44,7 +45,7 @@ No, FediBoost requires the ActivityPub plugin to be installed and properly confi
 
 = Can I choose which posts get boosted? =
 
-Currently, FediBoost will boost all newly published posts. Future versions may include options to selectively boost posts based on categories, tags, or other criteria. Developers can use the `fediboost_should_boost_post` filter to programmatically control which posts are boosted. See the Developer Hooks section below for details.
+Yes, by post type. Under Settings > FediBoost, choose which post types are boosted when published. Only post types the ActivityPub plugin federates are listed, and all of them are selected by default. Developers can use the `fediboost_should_boost_post` filter to programmatically control which posts are boosted. See the Developer Hooks section below for details.
 
 = Why don't my own boosts show up as reposts on my posts? =
 
@@ -187,6 +188,13 @@ Each Mastodon instance has its own privacy policy and terms of service. You can 
 This plugin does not send data to any third-party service other than the Mastodon instance(s) you explicitly configure.
 
 == Changelog ==
+
+= 1.1.0 =
+* Add a Post Types setting to choose which post types are boosted. Defaults to every post type the ActivityPub plugin federates, so existing sites see no change.
+* Stop recording reposts from connected Mastodon accounts, so a site's own boosts no longer show up as reposts on its posts.
+* Add `wp fediboost cleanup-self-boosts` to remove those reposts recorded by earlier versions.
+* Add the `fediboost_ignore_self_boosts` filter to keep recording them.
+* Tested up to WordPress 7.1.
 
 = 1.0.1 =
 * Delay boost scheduling until after ActivityPub federation completes
