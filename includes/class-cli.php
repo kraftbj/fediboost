@@ -338,7 +338,8 @@ class CLI {
 		// Keep machine-readable output parseable; warnings and errors still go to STDERR.
 		$verbose = 'table' === $format;
 
-		$comments = $this->find_self_boost_comments();
+		$boost    = Boost::get_instance();
+		$comments = $boost->find_self_boost_comments();
 
 		if ( empty( $comments ) ) {
 			if ( $verbose ) {
@@ -379,10 +380,7 @@ class CLI {
 		$removed = 0;
 		$failed  = 0;
 		foreach ( $comments as $comment ) {
-			// wp_delete_comment() deletes spam permanently even without force, so trash explicitly.
-			$result = $force ? wp_delete_comment( $comment, true ) : wp_trash_comment( $comment );
-
-			if ( $result ) {
+			if ( $boost->remove_self_boost_comment( $comment, $force ) ) {
 				++$removed;
 			} else {
 				++$failed;
@@ -403,56 +401,5 @@ class CLI {
 		if ( $verbose ) {
 			\WP_CLI::success( $message );
 		}
-	}
-
-	/**
-	 * Find stored ActivityPub reposts that came from connected accounts.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @return \WP_Comment[] Matching comments.
-	 */
-	private function find_self_boost_comments() {
-		$comment_ids = get_comments(
-			array(
-				'type'       => 'repost',
-				'status'     => array( 'approve', 'hold', 'spam' ),
-				'meta_key'   => 'protocol', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'meta_value' => 'activitypub', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-				'fields'     => 'ids',
-				'number'     => 0,
-			)
-		);
-
-		if ( empty( $comment_ids ) ) {
-			return array();
-		}
-
-		update_meta_cache( 'comment', $comment_ids );
-
-		$boost   = Boost::get_instance();
-		$matches = array();
-
-		foreach ( $comment_ids as $comment_id ) {
-			$comment = get_comment( $comment_id );
-			if ( ! $comment ) {
-				continue;
-			}
-
-			$commentdata = array(
-				'comment_type'       => $comment->comment_type,
-				'comment_author_url' => $comment->comment_author_url,
-				'comment_meta'       => array(
-					'protocol'  => get_comment_meta( $comment->comment_ID, 'protocol', true ),
-					'source_id' => get_comment_meta( $comment->comment_ID, 'source_id', true ),
-				),
-			);
-
-			if ( $boost->is_self_boost( $commentdata ) ) {
-				$matches[] = $comment;
-			}
-		}
-
-		return $matches;
 	}
 }

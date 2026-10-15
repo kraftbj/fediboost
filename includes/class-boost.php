@@ -200,6 +200,77 @@ class Boost {
 	}
 
 	/**
+	 * Find stored ActivityPub reposts that came from connected accounts.
+	 *
+	 * Covers approved, pending, and spam reposts. Already-trashed reposts are skipped.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return \WP_Comment[] Matching comments.
+	 */
+	public function find_self_boost_comments() {
+		$comment_ids = get_comments(
+			array(
+				'type'       => 'repost',
+				'status'     => array( 'approve', 'hold', 'spam' ),
+				'meta_key'   => 'protocol', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'activitypub', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'     => 'ids',
+				'number'     => 0,
+			)
+		);
+
+		if ( empty( $comment_ids ) ) {
+			return array();
+		}
+
+		update_meta_cache( 'comment', $comment_ids );
+
+		$matches = array();
+
+		foreach ( $comment_ids as $comment_id ) {
+			$comment = get_comment( $comment_id );
+			if ( ! $comment ) {
+				continue;
+			}
+
+			$commentdata = array(
+				'comment_type'       => $comment->comment_type,
+				'comment_author_url' => $comment->comment_author_url,
+				'comment_meta'       => array(
+					'protocol'  => get_comment_meta( $comment->comment_ID, 'protocol', true ),
+					'source_id' => get_comment_meta( $comment->comment_ID, 'source_id', true ),
+				),
+			);
+
+			if ( $this->is_self_boost( $commentdata ) ) {
+				$matches[] = $comment;
+			}
+		}
+
+		return $matches;
+	}
+
+	/**
+	 * Remove a stored self-boost repost.
+	 *
+	 * Moves the comment to the trash, or deletes it permanently when forced.
+	 * wp_delete_comment() permanently deletes spam even without force, so the
+	 * trash case calls wp_trash_comment() directly.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param \WP_Comment $comment The comment to remove.
+	 * @param bool        $force   Whether to delete permanently instead of trashing.
+	 * @return bool True on success.
+	 */
+	public function remove_self_boost_comment( $comment, $force = false ) {
+		$result = $force ? wp_delete_comment( $comment, true ) : wp_trash_comment( $comment );
+
+		return (bool) $result;
+	}
+
+	/**
 	 * Check whether a URL belongs to one of the connected Mastodon accounts.
 	 *
 	 * Matches the actor profile URL (https://host/@user) and actor/activity IDs

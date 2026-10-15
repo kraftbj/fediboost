@@ -49,6 +49,8 @@ jobs:
           unzip -qo /tmp/wp-nightly.zip -d .
           mkdir -p wordpress/wp-content/themes
           cp vendor/automattic/wordbless/src/dbless-wpdb.php wordpress/wp-content/db.php
+          mkdir -p wordpress/wp-content/plugins
+          cp -r vendor/automattic/wordbless/third-party/sqlite-database-integration wordpress/wp-content/plugins/wp-sqlite-integration
 
       - name: Use WordPress ${{ matrix.wp }}
         if: matrix.wp != 'latest' && matrix.wp != 'trunk'

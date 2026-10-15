@@ -61,13 +61,25 @@ Class files follow WordPress conventions: `class-{name}.php` where `{name}` matc
 
 ### Tests
 
-Tests use PHPUnit 9 with Yoast polyfills and require the WordPress test library:
+Tests use PHPUnit 9 with Yoast polyfills and [WorDBless](https://github.com/Automattic/wordbless), which loads WordPress from `wordpress/` (installed by Composer) without MySQL:
 
 ```
 composer test
 ```
 
-Tests are in `tests/` and require `WP_TESTS_DIR` to be set (or defaults to `sys_get_temp_dir()/wordpress-tests-lib`).
+This runs two suites, since WorDBless picks its database engine once per process:
+
+| Suite | Bootstrap | Engine | Files |
+|-------|-----------|--------|-------|
+| `default` | `tests/bootstrap.php` | In-memory (options, posts, users, meta only) | `tests/test-*.php` |
+| `sqlite` | `tests/bootstrap-sqlite.php` | SQLite (full SQL: comments, `WP_Query`, etc.) | `tests/sqlite/test-*.php` |
+
+Put tests that need tables the in-memory engine doesn't cover (such as comments) in `tests/sqlite/` and extend `FediBoost_SQLite_TestCase`, which rolls back a transaction after each test. To run one suite:
+
+```
+vendor/bin/phpunit --testsuite default
+vendor/bin/phpunit --testsuite sqlite --bootstrap tests/bootstrap-sqlite.php
+```
 
 Local WordPress dev environment via wp-env:
 

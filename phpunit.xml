@@ -8,8 +8,12 @@
 	convertWarningsToExceptions="true"
 >
 	<testsuites>
-		<testsuite name="FediBoost Test Suite">
-			<directory suffix=".php">./tests/</directory>
+		<testsuite name="default">
+			<directory prefix="test-" suffix=".php">./tests/</directory>
+			<exclude>./tests/sqlite/</exclude>
+		</testsuite>
+		<testsuite name="sqlite">
+			<directory prefix="test-" suffix=".php">./tests/sqlite/</directory>
 		</testsuite>
 	</testsuites>
 
