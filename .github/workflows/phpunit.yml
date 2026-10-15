@@ -52,7 +52,7 @@ jobs:
 
       - name: Use WordPress ${{ matrix.wp }}
         if: matrix.wp != 'latest' && matrix.wp != 'trunk'
-        run: composer require "roots/wordpress:${{ matrix.wp }}.*" --no-interaction
+        run: composer require "roots/wordpress:${{ matrix.wp }}.*" --with-all-dependencies --no-interaction
 
       - name: Run PHPUnit
         run: composer test
