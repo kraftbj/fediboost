@@ -16,12 +16,19 @@ require_once dirname( __DIR__ ) . '/vendor/autoload.php';
 
 /*
  * WorDBless recreates the SQLite database on every run, and WordPress reads
- * options while loading, before the tables exist. Swallow the resulting
- * "no such table" notice so it does not clutter test output.
+ * options while loading, before the tables exist. The resulting "no such
+ * table" error is echoed and also sent to error_log(); discard both so it
+ * does not clutter test output.
  */
+$fediboost_error_log = ini_get( 'error_log' );
+$fediboost_temp_log  = tempnam( sys_get_temp_dir(), 'fediboost' );
+ini_set( 'error_log', $fediboost_temp_log ); // phpcs:ignore WordPress.PHP.IniSet.Risky
 ob_start();
 \WorDBless\Load::load( 'sqlite' );
 ob_end_clean();
+ini_set( 'error_log', $fediboost_error_log ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+unlink( $fediboost_temp_log ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+unset( $fediboost_error_log, $fediboost_temp_log );
 
 // Load admin includes needed by some tests.
 require_once ABSPATH . 'wp-admin/includes/admin.php';
