@@ -18,8 +18,8 @@
 	"prefer-stable": true,
 	"scripts": {
 		"test": [
-			"phpunit --testsuite default",
-			"phpunit --testsuite sqlite --bootstrap tests/bootstrap-sqlite.php"
+			"phpunit",
+			"phpunit -c phpunit-sqlite.xml"
 		],
 		"phpcs": "phpcs",
 		"phpcbf": "phpcbf",

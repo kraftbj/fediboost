@@ -25,6 +25,7 @@ CODE_REVIEW.md
 # Testing
 tests/
 phpunit.xml
+phpunit-sqlite.xml
 phpcs.xml
 
 # Build tools

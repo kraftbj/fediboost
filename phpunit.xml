@@ -12,9 +12,6 @@
 			<directory prefix="test-" suffix=".php">./tests/</directory>
 			<exclude>./tests/sqlite/</exclude>
 		</testsuite>
-		<testsuite name="sqlite">
-			<directory prefix="test-" suffix=".php">./tests/sqlite/</directory>
-		</testsuite>
 	</testsuites>
 
 	<filter>
