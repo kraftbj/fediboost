@@ -283,7 +283,8 @@ class CLI {
 	 * Before FediBoost ignored them, each boost federated back to the site and was
 	 * recorded by ActivityPub as a "repost" interaction on the post. This finds
 	 * those reposts (approved, pending, or spam) using the same account matching
-	 * as the incoming filter, and moves them to the trash.
+	 * as the incoming filter, and moves them to the trash. If the trash is
+	 * disabled (EMPTY_TRASH_DAYS is 0), --force is required.
 	 *
 	 * Only accounts still stored by FediBoost are matched, so run this before
 	 * disconnecting an account whose reposts you want removed.
@@ -363,6 +364,17 @@ class CLI {
 		}
 
 		\WP_CLI\Utils\format_items( $format, $rows, $fields );
+
+		if ( ! $force && ! $boost->is_trash_enabled() ) {
+			$trash_disabled = 'Trash is disabled (EMPTY_TRASH_DAYS is 0), so these reposts can only be deleted permanently. Re-run with --force to delete them.';
+
+			if ( $dry_run ) {
+				\WP_CLI::warning( $trash_disabled );
+				return;
+			}
+
+			\WP_CLI::error( $trash_disabled );
+		}
 
 		if ( $dry_run ) {
 			if ( $verbose ) {

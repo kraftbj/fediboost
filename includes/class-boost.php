@@ -209,31 +209,20 @@ class Boost {
 	 * @return \WP_Comment[] Matching comments.
 	 */
 	public function find_self_boost_comments() {
-		$comment_ids = get_comments(
+		// Full objects (not IDs) so WP_Comment_Query primes comments and their meta in bulk.
+		$comments = get_comments(
 			array(
 				'type'       => 'repost',
 				'status'     => array( 'approve', 'hold', 'spam' ),
 				'meta_key'   => 'protocol', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				'meta_value' => 'activitypub', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-				'fields'     => 'ids',
 				'number'     => 0,
 			)
 		);
 
-		if ( empty( $comment_ids ) ) {
-			return array();
-		}
-
-		update_meta_cache( 'comment', $comment_ids );
-
 		$matches = array();
 
-		foreach ( $comment_ids as $comment_id ) {
-			$comment = get_comment( $comment_id );
-			if ( ! $comment ) {
-				continue;
-			}
-
+		foreach ( $comments as $comment ) {
 			$commentdata = array(
 				'comment_type'       => $comment->comment_type,
 				'comment_author_url' => $comment->comment_author_url,
@@ -256,18 +245,36 @@ class Boost {
 	 *
 	 * Moves the comment to the trash, or deletes it permanently when forced.
 	 * wp_delete_comment() permanently deletes spam even without force, so the
-	 * trash case calls wp_trash_comment() directly.
+	 * trash case calls wp_trash_comment() directly. When the trash is disabled,
+	 * wp_trash_comment() deletes permanently too, so unforced removal is refused.
 	 *
 	 * @since 1.1.0
 	 *
 	 * @param \WP_Comment $comment The comment to remove.
 	 * @param bool        $force   Whether to delete permanently instead of trashing.
-	 * @return bool True on success.
+	 * @return bool True on success, false on failure or when trash is disabled and not forced.
 	 */
 	public function remove_self_boost_comment( $comment, $force = false ) {
-		$result = $force ? wp_delete_comment( $comment, true ) : wp_trash_comment( $comment );
+		if ( $force ) {
+			return (bool) wp_delete_comment( $comment, true );
+		}
 
-		return (bool) $result;
+		if ( ! $this->is_trash_enabled() ) {
+			return false;
+		}
+
+		return (bool) wp_trash_comment( $comment );
+	}
+
+	/**
+	 * Whether WordPress keeps trashed comments rather than deleting them.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return bool False when EMPTY_TRASH_DAYS is 0.
+	 */
+	public function is_trash_enabled() {
+		return (bool) EMPTY_TRASH_DAYS;
 	}
 
 	/**

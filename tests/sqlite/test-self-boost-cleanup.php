@@ -276,4 +276,67 @@ class Test_Self_Boost_Cleanup extends FediBoost_SQLite_TestCase {
 
 		$this->assertIsInt( $result );
 	}
+	/**
+	 * Test unforced removal is refused when the trash is disabled.
+	 *
+	 * With EMPTY_TRASH_DAYS at 0, wp_trash_comment() deletes permanently, so
+	 * only forced removal may delete.
+	 */
+	public function test_remove_refuses_unforced_when_trash_disabled() {
+		$ids = $this->seed();
+
+		$boost = new class() extends Boost {
+			/**
+			 * Skip the parent constructor so hooks are not registered twice.
+			 */
+			public function __construct() {}
+
+			/**
+			 * Pretend EMPTY_TRASH_DAYS is 0.
+			 *
+			 * @return bool
+			 */
+			public function is_trash_enabled() {
+				return false;
+			}
+		};
+
+		$comment = get_comment( $ids['self_approved'] );
+
+		$this->assertFalse( $boost->remove_self_boost_comment( $comment ) );
+		$this->assertSame( 'approved', wp_get_comment_status( $ids['self_approved'] ) );
+
+		$this->assertTrue( $boost->remove_self_boost_comment( $comment, true ) );
+		$this->assertNull( get_comment( $ids['self_approved'] ) );
+	}
+
+	/**
+	 * Test the trash is enabled in the default test environment.
+	 */
+	public function test_trash_enabled_by_default() {
+		$this->assertTrue( $this->boost->is_trash_enabled() );
+	}
+
+	/**
+	 * Test finding candidates uses a fixed number of queries, not one per comment.
+	 */
+	public function test_find_self_boost_comments_query_count_is_constant() {
+		global $wpdb;
+
+		$count_queries = function () use ( $wpdb ) {
+			wp_cache_flush();
+			$before = $wpdb->num_queries;
+			$this->boost->find_self_boost_comments();
+			return $wpdb->num_queries - $before;
+		};
+
+		$this->seed();
+		$queries_before = $count_queries();
+
+		for ( $i = 0; $i < 20; $i++ ) {
+			$this->insert( 'repost', "https://mastodon.social/@user$i", "https://mastodon.social/users/user$i/statuses/$i/activity" );
+		}
+
+		$this->assertSame( $queries_before, $count_queries() );
+	}
 }
