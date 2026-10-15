@@ -50,6 +50,10 @@ Currently, FediBoost will boost all newly published posts. Future versions may i
 
 When FediBoost boosts a post, Mastodon sends that boost back to your site, and the ActivityPub plugin would normally record it as a "repost" on the post. Since that's just your own account boosting your own post, FediBoost discards reposts that come from any of your connected Mastodon accounts. Reposts from everyone else are recorded as usual. Developers can turn this off with the `fediboost_ignore_self_boosts` filter.
 
+Reposts recorded before this was added can be removed with WP-CLI:
+
+`wp fediboost cleanup-self-boosts --dry-run` lists them, `wp fediboost cleanup-self-boosts` moves them to the trash, and adding `--force` deletes them permanently. Only accounts still listed on the FediBoost settings page are matched, so run the cleanup before disconnecting an account.
+
 = What happens if I change my WordPress authentication salts? =
 
 FediBoost encrypts OAuth tokens using your WordPress authentication salts (defined in wp-config.php). If these salts are changed — for example, by a security plugin, during a security incident response, or by manually editing wp-config.php — all stored tokens will become invalid. You will need to reconnect your Mastodon accounts under Settings > FediBoost after any salt change. This is standard behavior for WordPress plugins that encrypt sensitive data using the built-in salts.

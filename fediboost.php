@@ -91,6 +91,7 @@ require_once FEDIBOOST_PLUGIN_DIR . 'includes/autoload.php';
  *   wp fediboost accounts → accounts_command()
  *   wp fediboost boost    → boost_command()
  *   wp fediboost status   → status_command()
+ *   wp fediboost cleanup-self-boosts → cleanup_self_boosts_command()
  */
 
 // Register activation hook.

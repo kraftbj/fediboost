@@ -188,4 +188,35 @@ class Test_Self_Boost_Filter extends FediBoost_TestCase {
 
 		$this->assertSame( $error, $result );
 	}
+
+	/**
+	 * Test is_self_boost() identifies reposts from connected accounts.
+	 */
+	public function test_is_self_boost() {
+		$this->assertTrue(
+			$this->boost->is_self_boost( $this->repost( 'https://mastodon.social/@kraft', 'https://mastodon.social/users/kraft/statuses/1/activity' ) )
+		);
+
+		$this->assertFalse(
+			$this->boost->is_self_boost( $this->repost( 'https://mastodon.social/@someone', 'https://mastodon.social/users/someone/statuses/1/activity' ) )
+		);
+
+		$like                 = $this->repost( 'https://mastodon.social/@kraft', 'https://mastodon.social/users/kraft#likes/1' );
+		$like['comment_type'] = 'like';
+		$this->assertFalse( $this->boost->is_self_boost( $like ) );
+
+		$this->assertFalse( $this->boost->is_self_boost( 'not an array' ) );
+		$this->assertFalse( $this->boost->is_self_boost( array() ) );
+	}
+
+	/**
+	 * Test is_self_boost() ignores the opt-out filter, which only governs incoming reposts.
+	 */
+	public function test_is_self_boost_ignores_opt_out_filter() {
+		add_filter( 'fediboost_ignore_self_boosts', '__return_false' );
+
+		$this->assertTrue(
+			$this->boost->is_self_boost( $this->repost( 'https://mastodon.social/@kraft', 'https://mastodon.social/users/kraft/statuses/1/activity' ) )
+		);
+	}
 }

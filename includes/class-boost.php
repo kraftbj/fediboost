@@ -130,12 +130,7 @@ class Boost {
 			return $approved;
 		}
 
-		if ( ! isset( $commentdata['comment_type'] ) || 'repost' !== $commentdata['comment_type'] ) {
-			return $approved;
-		}
-
-		$meta = isset( $commentdata['comment_meta'] ) && is_array( $commentdata['comment_meta'] ) ? $commentdata['comment_meta'] : array();
-		if ( ! isset( $meta['protocol'] ) || 'activitypub' !== $meta['protocol'] ) {
+		if ( ! $this->is_self_boost( $commentdata ) ) {
 			return $approved;
 		}
 
@@ -151,6 +146,45 @@ class Boost {
 			return $approved;
 		}
 
+		$this->log_info(
+			'Discarded repost from connected account',
+			array(
+				'post_id' => isset( $commentdata['comment_post_ID'] ) ? (int) $commentdata['comment_post_ID'] : 0,
+			)
+		);
+
+		return new \WP_Error(
+			'fediboost_self_boost',
+			__( 'Repost from a connected FediBoost account ignored.', 'fediboost' ),
+			409
+		);
+	}
+
+	/**
+	 * Check whether comment data describes a repost from a connected Mastodon account.
+	 *
+	 * Expects the shape ActivityPub passes to wp_new_comment(): `comment_type`,
+	 * `comment_author_url`, and `comment_meta` with `protocol` and `source_id`.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $commentdata Comment data.
+	 * @return bool True if this is an ActivityPub repost from a connected account.
+	 */
+	public function is_self_boost( $commentdata ) {
+		if ( ! is_array( $commentdata ) ) {
+			return false;
+		}
+
+		if ( ! isset( $commentdata['comment_type'] ) || 'repost' !== $commentdata['comment_type'] ) {
+			return false;
+		}
+
+		$meta = isset( $commentdata['comment_meta'] ) && is_array( $commentdata['comment_meta'] ) ? $commentdata['comment_meta'] : array();
+		if ( ! isset( $meta['protocol'] ) || 'activitypub' !== $meta['protocol'] ) {
+			return false;
+		}
+
 		$candidates = array(
 			isset( $commentdata['comment_author_url'] ) ? $commentdata['comment_author_url'] : '',
 			isset( $meta['source_id'] ) ? $meta['source_id'] : '',
@@ -158,23 +192,11 @@ class Boost {
 
 		foreach ( $candidates as $url ) {
 			if ( $this->is_connected_account_url( $url ) ) {
-				$this->log_info(
-					'Discarded repost from connected account',
-					array(
-						'post_id' => isset( $commentdata['comment_post_ID'] ) ? (int) $commentdata['comment_post_ID'] : 0,
-						'url'     => $url,
-					)
-				);
-
-				return new \WP_Error(
-					'fediboost_self_boost',
-					__( 'Repost from a connected FediBoost account ignored.', 'fediboost' ),
-					409
-				);
+				return true;
 			}
 		}
 
-		return $approved;
+		return false;
 	}
 
 	/**
