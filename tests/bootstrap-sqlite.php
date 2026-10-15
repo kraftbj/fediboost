@@ -39,6 +39,9 @@ require_once dirname( __DIR__ ) . '/fediboost.php';
 // Manually initialize since plugins_loaded has already fired.
 fediboost_init();
 
+// Stand in for WP-CLI so CLI commands can be run by tests.
+require_once __DIR__ . '/stubs/wp-cli.php';
+
 // Load the base test case classes.
 require_once __DIR__ . '/class-fediboost-testcase.php';
 require_once __DIR__ . '/class-fediboost-sqlite-testcase.php';
