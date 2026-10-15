@@ -95,7 +95,7 @@ class Test_Self_Boost_Filter extends FediBoost_TestCase {
 			$this->repost( 'https://mastodon.social/@kraft', 'https://mastodon.social/users/kraft/statuses/1/activity' )
 		);
 
-		$this->assertWPError( $result );
+		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'fediboost_self_boost', $result->get_error_code() );
 	}
 
@@ -108,7 +108,7 @@ class Test_Self_Boost_Filter extends FediBoost_TestCase {
 			$this->repost( 'https://mastodon.social/some/other/profile', 'https://mastodon.social/users/kraft/statuses/1/activity' )
 		);
 
-		$this->assertWPError( $result );
+		$this->assertInstanceOf( WP_Error::class, $result );
 	}
 
 	/**
@@ -123,7 +123,7 @@ class Test_Self_Boost_Filter extends FediBoost_TestCase {
 			$this->repost( 'https://mastodon.social/@kraft', 'https://mastodon.social/users/kraft/statuses/1/activity' )
 		);
 
-		$this->assertWPError( $result );
+		$this->assertInstanceOf( WP_Error::class, $result );
 	}
 
 	/**
