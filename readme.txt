@@ -4,7 +4,7 @@ Tags: activitypub, mastodon, fediverse, boost, social
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -189,6 +189,9 @@ This plugin does not send data to any third-party service other than the Mastodo
 
 == Changelog ==
 
+= 1.1.1 =
+* Compat: ensure FediBoost boost filtering works with Akismet spam checking.
+
 = 1.1.0 =
 * Add a Post Types setting to choose which post types are boosted. Defaults to every post type the ActivityPub plugin federates, so existing sites see no change.
 * Stop recording reposts from connected Mastodon accounts, so a site's own boosts no longer show up as reposts on its posts.
@@ -203,3 +206,8 @@ This plugin does not send data to any third-party service other than the Mastodo
 = 1.0.0 =
 * Initial release
 * Automatic boosting of published posts to connected Mastodon accounts
+
+== Upgrade Notice ==
+
+= 1.1.1 =
+Compat: ensure FediBoost boost filtering works with Akismet spam checking.
