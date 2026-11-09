@@ -67,7 +67,36 @@ class Test_Self_Boost_Filter extends FediBoost_TestCase {
 	 * Test the filter is registered.
 	 */
 	public function test_filter_is_registered() {
-		$this->assertSame( 10, has_filter( 'pre_comment_approved', array( $this->boost, 'maybe_reject_self_boost' ) ) );
+		$this->assertSame( 9999, has_filter( 'pre_comment_approved', array( $this->boost, 'maybe_reject_self_boost' ) ) );
+	}
+
+	/**
+	 * Test the rejection survives callbacks that change the approval status.
+	 *
+	 * Akismet's last_comment_status() runs at priority 10 and replaces the
+	 * status with its spam verdict, and ActivityPub then turns 'spam' into 1
+	 * at priority 11 when reactions are auto-approved. Running at those
+	 * priorities would let the WP_Error be swapped out and the self-boost
+	 * saved as an approved comment.
+	 */
+	public function test_rejection_is_not_overridden_by_later_filters() {
+		$akismet     = static function () {
+			return 'spam';
+		};
+		$activitypub = static function ( $approved ) {
+			return is_wp_error( $approved ) ? $approved : 1;
+		};
+
+		add_filter( 'pre_comment_approved', $akismet, 10 );
+		add_filter( 'pre_comment_approved', $activitypub, 11 );
+
+		$result = apply_filters( 'pre_comment_approved', 0, $this->repost( 'https://mastodon.social/@kraft', 'https://mastodon.social/users/kraft/statuses/1/activity' ) );
+
+		remove_filter( 'pre_comment_approved', $akismet, 10 );
+		remove_filter( 'pre_comment_approved', $activitypub, 11 );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'fediboost_self_boost', $result->get_error_code() );
 	}
 
 	/**

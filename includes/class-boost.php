@@ -108,8 +108,12 @@ class Boost {
 		 * connected account boosts the post. ActivityPub stores incoming Announce
 		 * activities via wp_new_comment( $data, true ), so a WP_Error from
 		 * pre_comment_approved aborts the insert cleanly.
+		 *
+		 * Run late so no later callback can replace the WP_Error. Akismet's
+		 * last_comment_status() swaps in its spam verdict at priority 10, and
+		 * ActivityPub then auto-approves reactions marked as spam.
 		 */
-		add_filter( 'pre_comment_approved', array( $this, 'maybe_reject_self_boost' ), 10, 2 );
+		add_filter( 'pre_comment_approved', array( $this, 'maybe_reject_self_boost' ), 9999, 2 );
 	}
 
 	/**
